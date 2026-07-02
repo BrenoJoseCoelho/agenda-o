@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrganizationType {
+  DONO
+  AGENCIA
+}
+
+enum ConversationStatus {
+  NOVA
+  EM_ATENDIMENTO
+  AGENDOU
+  PERDIDA
+}
+
+enum MessageSender {
+  CLIENTE
+  IA
+  HUMANO
+}
+
+enum AppointmentStatus {
+  CONFIRMADO
+  CANCELADO
+  CONCLUIDO
+}
+
+enum BillingStatus {
+  TRIAL
+  ATIVO
+  PAUSADO
+}
+
+// Tenant boundary. type DONO = one Business owned directly.
+// type AGENCIA = a marketing agency reselling to N client Businesses.
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  type      OrganizationType
+  createdAt DateTime         @default(now())
+
+  users     User[]
+  businesses Business[]
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  email          String       @unique
+  passwordHash   String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+}
+
+// One WhatsApp-attended establishment (salon, clinic, etc).
+// Under a DONO org there is exactly one Business; under an AGENCIA org there are many (its clients).
+model Business {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name          String
+  slug          String   @unique
+  timezone      String   @default("America/Sao_Paulo")
+
+  // Cerebro (AI brain) config
+  aiName        String   @default("Bia")
+  tone          String   @default("Simpatica, direta e profissional. Usa poucas emojis.")
+  openingHours  String   @default("Seg a Sex 09:00-19:00, Sab 09:00-13:00")
+  rules         String   @default("Nunca invente precos ou horarios. Sempre confirme o servico antes de agendar.")
+
+  // WhatsApp Cloud API credentials (filled when the business connects a real number)
+  whatsappPhoneNumberId String?
+  whatsappAccessToken   String?
+  whatsappVerifyToken   String?
+
+  billingStatus BillingStatus @default(TRIAL)
+
+  createdAt DateTime @default(now())
+
+  services      Service[]
+  contacts      Contact[]
+  conversations Conversation[]
+  appointments  Appointment[]
+}
+
+model Service {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name            String
+  priceCents      Int
+  durationMinutes Int      @default(30)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  appointments Appointment[]
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name      String
+  phone     String
+  createdAt DateTime @default(now())
+
+  conversations Conversation[]
+  appointments  Appointment[]
+
+  @@unique([businessId, phone])
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contactId  String
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  status        ConversationStatus @default(NOVA)
+  lastMessageAt DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+
+  messages     Message[]
+  appointments Appointment[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sender    MessageSender
+  content   String
+  createdAt DateTime      @default(now())
+}
+
+model Appointment {
+  id             String   @id @default(cuid())
+  businessId     String
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contactId      String
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service  @relation(fields: [serviceId], references: [id])
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  scheduledAt DateTime
+  status      AppointmentStatus @default(CONFIRMADO)
+  createdAt   DateTime          @default(now())
+}
