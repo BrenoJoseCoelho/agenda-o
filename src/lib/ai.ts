@@ -33,17 +33,43 @@ function buildSystemPrompt(business: Business, services: Service[]) {
     day: "numeric",
   });
 
+  const formalityText: Record<string, string> = {
+    INFORMAL: "Fale de forma bem informal e proxima, como um amigo. Pode usar giria leve.",
+    NEUTRO: "Fale de forma natural e cordial, nem formal demais nem gíria.",
+    FORMAL: "Fale de forma formal e respeitosa, tratando o cliente por 'senhor(a)'.",
+  };
+  const emojiText: Record<string, string> = {
+    NENHUM: "Nao use emojis.",
+    POUCO: "Use no maximo 1 emoji quando fizer sentido.",
+    BASTANTE: "Use emojis a vontade para deixar a conversa animada.",
+  };
+
+  const personality = [
+    `Tom de voz: ${business.tone}`,
+    formalityText[business.formality] ?? formalityText.NEUTRO,
+    emojiText[business.emojiLevel] ?? emojiText.POUCO,
+    business.signature ? `Assinatura/bordao que voce costuma usar: "${business.signature}".` : "",
+    business.avoid ? `NUNCA diga o seguinte: ${business.avoid}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const examplesBlock = business.examples
+    ? `\nExemplos do jeito de responder (imite este estilo, nao copie ao pe da letra):\n${business.examples}\n`
+    : "";
+
   return `Voce e ${business.aiName}, atendente de IA no WhatsApp de "${business.name}".
-Tom de voz: ${business.tone}
+${personality}
 Horario de funcionamento: ${business.openingHours}
 Regras: ${business.rules}
-
+${examplesBlock}
 Servicos e precos disponiveis:
 ${serviceLines}
 
 Seu objetivo e tirar duvidas e conduzir o cliente ate o agendamento de um dos servicos acima.
 Quando o cliente confirmar servico, dia e horario, chame a ferramenta "agendar_horario" com os dados exatos.
 Nunca invente servicos, precos ou horarios fora do que foi informado. Responda como uma mensagem real de WhatsApp: curta, direta, no maximo 2-3 frases.
+Se a mensagem do cliente veio de um audio transcrito e houver ambiguidade, confirme brevemente o que voce entendeu antes de agir.
 Hoje e ${today}.`;
 }
 

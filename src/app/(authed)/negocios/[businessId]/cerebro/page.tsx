@@ -6,6 +6,7 @@ import {
   removeServiceAction,
   updateWhatsappAction,
 } from "@/app/actions/business-actions";
+import PersonaPresets from "./PersonaPresets";
 
 function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -49,7 +50,48 @@ export default async function CerebroPage({
           <Field label="Nome da atendente IA" name="aiName" defaultValue={business.aiName} />
         </div>
 
+        <PersonaPresets />
+
         <TextAreaField label="Tom de voz" name="tone" defaultValue={business.tone} rows={2} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <SelectField
+            label="Formalidade"
+            name="formality"
+            defaultValue={business.formality}
+            options={[
+              { value: "INFORMAL", label: "Informal (amigo)" },
+              { value: "NEUTRO", label: "Neutro" },
+              { value: "FORMAL", label: "Formal (senhor/senhora)" },
+            ]}
+          />
+          <SelectField
+            label="Uso de emoji"
+            name="emojiLevel"
+            defaultValue={business.emojiLevel}
+            options={[
+              { value: "NENHUM", label: "Nenhum" },
+              { value: "POUCO", label: "Pouco" },
+              { value: "BASTANTE", label: "Bastante" },
+            ]}
+          />
+        </div>
+
+        <Field
+          label="Assinatura / bordao (opcional)"
+          name="signature"
+          defaultValue={business.signature ?? ""}
+          placeholder="Ex: Qualquer coisa e so chamar!"
+        />
+
+        <TextAreaField
+          label="Exemplos do seu jeito de responder (opcional) — a IA imita o estilo"
+          name="examples"
+          defaultValue={business.examples ?? ""}
+          rows={4}
+          placeholder={"Cliente: quanto e o corte?\nVoce: Fica R$ 45, meu parceiro! Quer que eu ja deixe marcado?"}
+        />
+
         <TextAreaField
           label="Horario de funcionamento"
           name="openingHours"
@@ -61,6 +103,13 @@ export default async function CerebroPage({
           name="rules"
           defaultValue={business.rules}
           rows={3}
+        />
+        <TextAreaField
+          label="O que a IA nunca deve dizer (opcional)"
+          name="avoid"
+          defaultValue={business.avoid ?? ""}
+          rows={2}
+          placeholder="Ex: nunca fale de politica, nunca prometa desconto"
         />
 
         <button type="submit" className="btn-primary">
@@ -159,11 +208,21 @@ export default async function CerebroPage({
   );
 }
 
-function Field({ label, name, defaultValue }: { label: string; name: string; defaultValue: string }) {
+function Field({
+  label,
+  name,
+  defaultValue,
+  placeholder,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+  placeholder?: string;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-body">{label}</label>
-      <input name={name} defaultValue={defaultValue} className="input-app" />
+      <input name={name} defaultValue={defaultValue} placeholder={placeholder} className="input-app" />
     </div>
   );
 }
@@ -173,16 +232,49 @@ function TextAreaField({
   name,
   defaultValue,
   rows,
+  placeholder,
 }: {
   label: string;
   name: string;
   defaultValue: string;
   rows: number;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-body">{label}</label>
-      <textarea name={name} defaultValue={defaultValue} rows={rows} className="input-app resize-y" />
+      <textarea
+        name={name}
+        defaultValue={defaultValue}
+        rows={rows}
+        placeholder={placeholder}
+        className="input-app resize-y"
+      />
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  name,
+  defaultValue,
+  options,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-body">{label}</label>
+      <select name={name} defaultValue={defaultValue} className="input-app">
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

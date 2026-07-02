@@ -52,6 +52,18 @@ enum CalendarConnectionStatus {
   REVOGADA
 }
 
+enum Formality {
+  INFORMAL
+  NEUTRO
+  FORMAL
+}
+
+enum EmojiLevel {
+  NENHUM
+  POUCO
+  BASTANTE
+}
+
 // Tenant boundary. type DONO = one Business owned directly.
 // type AGENCIA = a marketing agency reselling to N client Businesses.
 model Organization {
@@ -90,6 +102,13 @@ model Business {
   tone          String   @default("Simpatica, direta e profissional. Usa poucas emojis.")
   openingHours  String   @default("Seg a Sex 09:00-19:00, Sab 09:00-13:00")
   rules         String   @default("Nunca invente precos ou horarios. Sempre confirme o servico antes de agendar.")
+
+  // Personalidade — controle fino de como a IA fala (para atendimento personalizado).
+  formality   Formality  @default(NEUTRO)
+  emojiLevel  EmojiLevel @default(POUCO)
+  signature   String?    // bordao/assinatura, ex: "Qualquer coisa e so chamar! 💈"
+  examples    String?    // exemplos de conversa (cliente/atendente) para a IA imitar o jeito
+  avoid       String?    // o que a IA nunca deve dizer, alem das regras
 
   // WhatsApp Cloud API credentials (filled when the business connects a real number)
   whatsappPhoneNumberId String?

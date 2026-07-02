@@ -37,6 +37,15 @@ export async function createBusinessAction(formData: FormData) {
 export async function updateBrainAction(businessId: string, formData: FormData) {
   const { business } = await requireBusiness(businessId);
 
+  const formality = String(formData.get("formality") || business.formality);
+  const emojiLevel = String(formData.get("emojiLevel") || business.emojiLevel);
+  const validFormality = ["INFORMAL", "NEUTRO", "FORMAL"].includes(formality)
+    ? (formality as "INFORMAL" | "NEUTRO" | "FORMAL")
+    : business.formality;
+  const validEmoji = ["NENHUM", "POUCO", "BASTANTE"].includes(emojiLevel)
+    ? (emojiLevel as "NENHUM" | "POUCO" | "BASTANTE")
+    : business.emojiLevel;
+
   await prisma.business.update({
     where: { id: business.id },
     data: {
@@ -45,6 +54,11 @@ export async function updateBrainAction(businessId: string, formData: FormData) 
       tone: String(formData.get("tone") || business.tone),
       openingHours: String(formData.get("openingHours") || business.openingHours),
       rules: String(formData.get("rules") || business.rules),
+      formality: validFormality,
+      emojiLevel: validEmoji,
+      signature: String(formData.get("signature") || "").trim() || null,
+      examples: String(formData.get("examples") || "").trim() || null,
+      avoid: String(formData.get("avoid") || "").trim() || null,
     },
   });
 

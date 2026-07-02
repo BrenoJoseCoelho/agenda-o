@@ -34,3 +34,35 @@ export async function sendWhatsappMessage(business: Business, toPhone: string, t
 
   return { skipped: false as const };
 }
+
+// Downloads a media object (e.g. a voice note) from the Meta Cloud API.
+// Media arrives as an ID; you first resolve it to a temporary URL, then fetch
+// the bytes with the business's access token.
+export async function downloadWhatsappMedia(
+  business: Business,
+  mediaId: string
+): Promise<{ data: ArrayBuffer; mimeType: string } | null> {
+  if (!business.whatsappAccessToken) return null;
+
+  try {
+    const metaRes = await fetch(`https://graph.facebook.com/v21.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${business.whatsappAccessToken}` },
+    });
+    if (!metaRes.ok) return null;
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string };
+    if (!meta.url) return null;
+
+    const fileRes = await fetch(meta.url, {
+      headers: { Authorization: `Bearer ${business.whatsappAccessToken}` },
+    });
+    if (!fileRes.ok) return null;
+
+    return {
+      data: await fileRes.arrayBuffer(),
+      mimeType: meta.mime_type || "audio/ogg",
+    };
+  } catch (error) {
+    console.error("[whatsapp] media download error:", error);
+    return null;
+  }
+}

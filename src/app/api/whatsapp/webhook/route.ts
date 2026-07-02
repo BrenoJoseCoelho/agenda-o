@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { processIncomingMessage } from "@/lib/conversation-engine";
-import { sendWhatsappMessage } from "@/lib/whatsapp";
+import { sendWhatsappMessage, downloadWhatsappMedia } from "@/lib/whatsapp";
+import { transcribeAudio, transcriptionConfigured } from "@/lib/transcription";
 
 // Meta Cloud API webhook verification handshake.
 // Configure this same URL + WHATSAPP_VERIFY_TOKEN in the Meta App dashboard.
@@ -23,7 +24,13 @@ type WhatsappWebhookPayload = {
       value?: {
         metadata?: { phone_number_id?: string };
         contacts?: Array<{ profile?: { name?: string }; wa_id?: string }>;
-        messages?: Array<{ from?: string; text?: { body?: string }; type?: string }>;
+        messages?: Array<{
+          from?: string;
+          type?: string;
+          text?: { body?: string };
+          audio?: { id?: string; mime_type?: string };
+          voice?: { id?: string; mime_type?: string };
+        }>;
       };
     }>;
   }>;
@@ -38,12 +45,41 @@ export async function POST(request: Request) {
       const value = change.value;
       const phoneNumberId = value?.metadata?.phone_number_id;
       const incoming = value?.messages?.[0];
-      if (!phoneNumberId || !incoming?.text?.body || !incoming.from) continue;
+      if (!phoneNumberId || !incoming?.from) continue;
 
       const business = await prisma.business.findFirst({
         where: { whatsappPhoneNumberId: phoneNumberId },
       });
       if (!business) continue;
+
+      // Resolve the message text — either the text body, or a transcribed audio.
+      let content = incoming.text?.body?.trim() ?? "";
+      const audioMedia = incoming.audio ?? incoming.voice;
+
+      if (!content && audioMedia?.id) {
+        if (!transcriptionConfigured()) {
+          // No transcription provider configured — ask the customer to send text.
+          await sendWhatsappMessage(
+            business,
+            incoming.from,
+            "Ainda nao consigo ouvir audios por aqui 😅 Pode me mandar por texto?"
+          );
+          continue;
+        }
+        const media = await downloadWhatsappMedia(business, audioMedia.id);
+        const transcript = media ? await transcribeAudio(media.data, media.mimeType) : null;
+        if (!transcript) {
+          await sendWhatsappMessage(
+            business,
+            incoming.from,
+            "Nao consegui entender o audio, pode repetir ou mandar por texto?"
+          );
+          continue;
+        }
+        content = transcript;
+      }
+
+      if (!content) continue; // unsupported message type (image, sticker, etc.)
 
       const contactName = value?.contacts?.[0]?.profile?.name ?? incoming.from;
 
@@ -66,7 +102,7 @@ export async function POST(request: Request) {
       const { aiMessage } = await processIncomingMessage({
         business,
         conversationId: conversation.id,
-        content: incoming.text.body,
+        content,
       });
 
       await sendWhatsappMessage(business, incoming.from, aiMessage.content);
