@@ -23,8 +23,8 @@ export default function BusinessNav({ businessId }: { businessId: string }) {
             href={href}
             className={`text-sm px-4 py-1.5 rounded-full transition-all ${
               active
-                ? "bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 shadow-[0_0_16px_rgba(16,185,129,0.15)]"
-                : "text-white/45 border border-transparent hover:text-white/85 hover:bg-white/5"
+                ? "bg-emerald-400/15 text-emerald-500 border border-emerald-400/30 shadow-[0_0_16px_rgba(16,185,129,0.15)]"
+                : "text-2 border border-transparent hover:text-1 hover-surface"
             }`}
           >
             {tab.label}

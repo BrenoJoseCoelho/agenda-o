@@ -1,8 +1,57 @@
 @import "tailwindcss";
 
+/* Make Tailwind's `dark:` variant follow the `.dark` class (set by next-themes)
+   instead of the OS-level prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============ Theme tokens ============ */
+/* Light is the base (:root). next-themes toggles the `dark` class on <html>. */
 :root {
+  --background: #f4f6f8;
+  --foreground: #0e1116;
+
+  --fg-strong: #0b0e12;
+  --fg: rgba(14, 17, 22, 0.82);
+  --fg-muted: rgba(14, 17, 22, 0.55);
+  --fg-subtle: rgba(14, 17, 22, 0.4);
+
+  --border: rgba(14, 17, 22, 0.1);
+  --surface: rgba(255, 255, 255, 0.75);
+  --surface-hover: rgba(14, 17, 22, 0.04);
+  --surface-soft: rgba(14, 17, 22, 0.03);
+
+  --input-bg: #ffffff;
+  --input-border: rgba(14, 17, 22, 0.15);
+
+  --header-bg: rgba(244, 246, 248, 0.8);
+  --chat-bg: #eef1f4;
+
+  --card-shadow: 0 10px 30px rgba(14, 17, 22, 0.06);
+  --glow-opacity: 0.18;
+}
+
+.dark {
   --background: #07090d;
   --foreground: #e7ecf2;
+
+  --fg-strong: #ffffff;
+  --fg: rgba(231, 236, 242, 0.9);
+  --fg-muted: rgba(231, 236, 242, 0.45);
+  --fg-subtle: rgba(231, 236, 242, 0.35);
+
+  --border: rgba(255, 255, 255, 0.08);
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-soft: rgba(255, 255, 255, 0.02);
+
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+
+  --header-bg: rgba(7, 9, 13, 0.8);
+  --chat-bg: #0a0e13;
+
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --glow-opacity: 0.35;
 }
 
 @theme inline {
@@ -16,6 +65,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 ::selection {
@@ -30,24 +80,62 @@ body {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--border);
   border-radius: 8px;
 }
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+
+/* ============ Semantic text hierarchy ============ */
+.text-1 {
+  color: var(--fg-strong);
+}
+.text-2 {
+  color: var(--fg-muted);
+}
+.text-3 {
+  color: var(--fg-subtle);
+}
+.text-body {
+  color: var(--fg);
 }
 
-/* Shared surface + input styles for the dark shell */
+/* ============ Surfaces ============ */
+.bd {
+  border-color: var(--border);
+}
+.divide-app > * + * {
+  border-color: var(--border);
+}
+.hover-surface:hover {
+  background: var(--surface-hover);
+}
+.bg-soft {
+  background: var(--surface-soft);
+}
+
 .glass {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--border);
   backdrop-filter: blur(12px);
+  box-shadow: var(--card-shadow);
 }
 
-.input-dark {
+.header-bg {
+  background: var(--header-bg);
+  backdrop-filter: blur(16px);
+}
+
+.chat-bg {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(16, 185, 129, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(16, 185, 129, 0.05), transparent 40%),
+    var(--chat-bg);
+}
+
+/* ============ Inputs ============ */
+.input-app {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 0.6rem;
   padding: 0.55rem 0.8rem;
   font-size: 0.875rem;
@@ -55,15 +143,15 @@ body {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.input-dark::placeholder {
-  color: rgba(231, 236, 242, 0.35);
+.input-app::placeholder {
+  color: var(--fg-subtle);
 }
-.input-dark:focus {
+.input-app:focus {
   border-color: rgba(16, 185, 129, 0.6);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-  background: rgba(255, 255, 255, 0.07);
 }
 
+/* ============ Buttons ============ */
 .btn-primary {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #04110b;
@@ -75,7 +163,7 @@ body {
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
 }
 .btn-primary:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 .btn-primary:active {
   transform: translateY(1px);
@@ -85,9 +173,9 @@ body {
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--foreground);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  color: var(--fg);
   font-weight: 500;
   border-radius: 0.6rem;
   padding: 0.55rem 1rem;
@@ -95,14 +183,16 @@ body {
   transition: background 0.15s;
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-hover);
+  filter: brightness(0.97);
 }
 
-/* Ambient glow blobs used on auth screens and headers */
+/* ============ Ambient glow (auth screens) ============ */
 .glow-emerald {
   position: absolute;
   border-radius: 9999px;
   filter: blur(90px);
   pointer-events: none;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.35), transparent 70%);
+  opacity: var(--glow-opacity);
+  background: radial-gradient(circle, rgba(16, 185, 129, 1), transparent 70%);
 }

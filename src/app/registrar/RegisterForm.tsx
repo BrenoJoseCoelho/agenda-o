@@ -7,11 +7,11 @@ export default function RegisterForm({ error }: { error?: string }) {
   const [orgType, setOrgType] = useState<"DONO" | "AGENCIA">("DONO");
 
   return (
-    <form action={registerAction} className="glass rounded-2xl p-6 space-y-4 shadow-2xl shadow-black/40">
-      <h1 className="text-lg font-semibold">Criar conta</h1>
+    <form action={registerAction} className="glass rounded-2xl p-6 space-y-4">
+      <h1 className="text-lg font-semibold text-1">Criar conta</h1>
 
       {error && (
-        <div className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+        <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
           {error}
         </div>
       )}
@@ -22,8 +22,8 @@ export default function RegisterForm({ error }: { error?: string }) {
           onClick={() => setOrgType("DONO")}
           className={`rounded-lg border px-3 py-2.5 text-sm font-medium text-left transition-all ${
             orgType === "DONO"
-              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-              : "border-white/10 bg-white/5 text-white/50 hover:text-white/80"
+              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              : "bd bg-soft text-2 hover:text-1"
           }`}
         >
           Sou dono do negocio
@@ -33,8 +33,8 @@ export default function RegisterForm({ error }: { error?: string }) {
           onClick={() => setOrgType("AGENCIA")}
           className={`rounded-lg border px-3 py-2.5 text-sm font-medium text-left transition-all ${
             orgType === "AGENCIA"
-              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-              : "border-white/10 bg-white/5 text-white/50 hover:text-white/80"
+              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              : "bd bg-soft text-2 hover:text-1"
           }`}
         >
           Sou agencia
@@ -43,43 +43,43 @@ export default function RegisterForm({ error }: { error?: string }) {
       <input type="hidden" name="orgType" value={orgType} />
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-white/70">Seu nome</label>
-        <input name="name" required className="input-dark" />
+        <label className="text-sm font-medium text-body">Seu nome</label>
+        <input name="name" required className="input-app" />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-white/70">Email</label>
-        <input name="email" type="email" required className="input-dark" />
+        <label className="text-sm font-medium text-body">Email</label>
+        <input name="email" type="email" required className="input-app" />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-white/70">Senha</label>
-        <input name="password" type="password" required minLength={6} className="input-dark" />
+        <label className="text-sm font-medium text-body">Senha</label>
+        <input name="password" type="password" required minLength={6} className="input-app" />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-white/70">
+        <label className="text-sm font-medium text-body">
           {orgType === "DONO" ? "Nome do seu negocio" : "Nome da sua agencia"}
         </label>
         <input
           name="orgName"
           required
-          className="input-dark"
+          className="input-app"
           placeholder={orgType === "DONO" ? "Barbearia do Ze" : "Agencia XYZ"}
         />
       </div>
 
       {orgType === "DONO" && (
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-white/70">
+          <label className="text-sm font-medium text-body">
             Nome do estabelecimento (aparece no WhatsApp)
           </label>
-          <input name="businessName" required className="input-dark" placeholder="Barbearia do Ze" />
+          <input name="businessName" required className="input-app" placeholder="Barbearia do Ze" />
         </div>
       )}
 
       {orgType === "AGENCIA" && (
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-2">
           Depois de criar a conta, voce adiciona os clientes (sub-contas) na aba Organizacao.
         </p>
       )}
