@@ -41,6 +41,17 @@ enum BillingStatus {
   PAUSADO
 }
 
+enum CalendarProvider {
+  GOOGLE
+  OUTLOOK
+}
+
+enum CalendarConnectionStatus {
+  ATIVA
+  EXPIRADA
+  REVOGADA
+}
+
 // Tenant boundary. type DONO = one Business owned directly.
 // type AGENCIA = a marketing agency reselling to N client Businesses.
 model Organization {
@@ -87,12 +98,39 @@ model Business {
 
   billingStatus BillingStatus @default(TRIAL)
 
+  // Token for the read-only ICS calendar feed (subscribe from any calendar app).
+  // Lazily generated the first time the feed is opened in the UI.
+  icsToken String? @unique
+
   createdAt DateTime @default(now())
 
-  services      Service[]
-  contacts      Contact[]
-  conversations Conversation[]
-  appointments  Appointment[]
+  services            Service[]
+  contacts            Contact[]
+  conversations       Conversation[]
+  appointments        Appointment[]
+  calendarConnections CalendarConnection[]
+}
+
+// An OAuth connection to an external calendar (Google, Outlook, ...).
+// One row per connected provider per business.
+model CalendarConnection {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  provider     CalendarProvider
+  status       CalendarConnectionStatus @default(ATIVA)
+  accountEmail String?
+  calendarId   String                   @default("primary")
+
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, provider])
 }
 
 model Service {
@@ -163,4 +201,9 @@ model Appointment {
   scheduledAt DateTime
   status      AppointmentStatus @default(CONFIRMADO)
   createdAt   DateTime          @default(now())
+
+  // When pushed to an external calendar, which provider + event id, so we can
+  // update/cancel it later.
+  externalProvider CalendarProvider?
+  externalEventId  String?
 }

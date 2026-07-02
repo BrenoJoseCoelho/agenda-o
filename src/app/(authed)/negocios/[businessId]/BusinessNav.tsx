@@ -7,6 +7,7 @@ const TABS = [
   { key: "painel", label: "Painel" },
   { key: "conversas", label: "Conversas" },
   { key: "cerebro", label: "Cerebro" },
+  { key: "integracoes", label: "Integracoes" },
 ];
 
 export default function BusinessNav({ businessId }: { businessId: string }) {

@@ -154,8 +154,13 @@ function findMentionedService(services: Service[], text: string): Service | unde
     return new RegExp(`\\b${firstWord}\\b`).test(text);
   });
   if (candidates.length === 0) return undefined;
-  const exact = candidates.find((s) => text.includes(s.name.toLowerCase()));
-  if (exact) return exact;
+  // If one or more full names appear in the text, prefer the LONGEST match
+  // ("corte + barba" beats a bare "barba" that is a substring of it).
+  const fullMatches = candidates
+    .filter((s) => text.includes(s.name.toLowerCase()))
+    .sort((a, b) => b.name.length - a.name.length);
+  if (fullMatches.length > 0) return fullMatches[0];
+  // Otherwise only a first word matched (e.g. bare "corte"): pick the simplest service.
   const wordCount = (name: string) => name.trim().split(/\s+/).filter(Boolean).length;
   return [...candidates].sort((a, b) => wordCount(a.name) - wordCount(b.name))[0];
 }
