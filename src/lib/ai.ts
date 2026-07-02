@@ -12,7 +12,9 @@ export type AiResult = {
   appointment?: { serviceId: string; scheduledAt: Date };
 };
 
-const MODEL = "claude-sonnet-5";
+// Default to Opus 4.8 (most capable). Override with ANTHROPIC_MODEL for a
+// cheaper/faster tier on high volume, e.g. "claude-sonnet-5" or "claude-haiku-4-5".
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
 function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
