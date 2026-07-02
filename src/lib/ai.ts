@@ -198,9 +198,14 @@ function heuristicReply(business: Business, services: Service[], history: Histor
     return { reply: `Claro! Qual servico voce quer: ${list}?` };
   }
 
-  return {
-    reply: `Oi! Aqui e a ${business.aiName} da ${business.name}. Posso te ajudar com horarios, precos ou marcar um atendimento :)`,
-  };
+  // First contact gets a short introduction; after that, just ask what they need.
+  const isFirstCustomerMessage = history.filter((h) => h.sender === "CLIENTE").length <= 1;
+  if (isFirstCustomerMessage) {
+    return {
+      reply: `Oi! Aqui e a ${business.aiName}, da ${business.name}. Como posso te ajudar?`,
+    };
+  }
+  return { reply: "Como posso te ajudar?" };
 }
 
 function guessDate(text: string): Date {

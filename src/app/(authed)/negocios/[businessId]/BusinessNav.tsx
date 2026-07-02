@@ -13,7 +13,7 @@ export default function BusinessNav({ businessId }: { businessId: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-6 mt-3">
+    <nav className="flex gap-1.5 mt-4 pb-4">
       {TABS.map((tab) => {
         const href = `/negocios/${businessId}/${tab.key}`;
         const active = pathname?.startsWith(href);
@@ -21,10 +21,10 @@ export default function BusinessNav({ businessId }: { businessId: string }) {
           <Link
             key={tab.key}
             href={href}
-            className={`text-sm pb-3 border-b-2 transition-colors ${
+            className={`text-sm px-4 py-1.5 rounded-full transition-all ${
               active
-                ? "border-emerald-600 text-emerald-700 font-medium"
-                : "border-transparent text-neutral-500 hover:text-neutral-800"
+                ? "bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 shadow-[0_0_16px_rgba(16,185,129,0.15)]"
+                : "text-white/45 border border-transparent hover:text-white/85 hover:bg-white/5"
             }`}
           >
             {tab.label}

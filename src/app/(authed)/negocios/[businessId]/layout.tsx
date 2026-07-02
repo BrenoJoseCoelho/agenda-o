@@ -14,14 +14,17 @@ export default async function BusinessLayout({
 
   return (
     <div>
-      <div className="border-b border-neutral-200 bg-white">
+      <div className="border-b border-white/8">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-between pt-5">
             <div>
-              <div className="text-lg font-semibold text-neutral-900">{business.name}</div>
+              <div className="text-xl font-semibold tracking-tight">{business.name}</div>
               {session.user.organizationType === "AGENCIA" && (
-                <Link href="/organizacao" className="text-xs text-emerald-600 hover:underline">
-                  Trocar cliente
+                <Link
+                  href="/organizacao"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  ← Trocar cliente
                 </Link>
               )}
             </div>

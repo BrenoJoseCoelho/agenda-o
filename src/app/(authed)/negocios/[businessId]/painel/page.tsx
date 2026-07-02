@@ -51,13 +51,17 @@ export default async function PainelPage({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">Painel</h1>
-        <p className="text-sm text-neutral-500 mt-1">O que a IA fez enquanto voce estava fora.</p>
+        <h1 className="text-xl font-semibold tracking-tight">Painel</h1>
+        <p className="text-sm text-white/45 mt-1">O que a IA fez enquanto voce estava fora.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Conversas atendidas" value={String(conversations.length)} />
-        <StatCard label="Agendamentos" value={String(appointmentsCount)} hint={`${scheduledCount} conversas fecharam`} />
+        <StatCard
+          label="Agendamentos"
+          value={String(appointmentsCount)}
+          hint={`${scheduledCount} conversas fecharam`}
+        />
         <StatCard label="Leads capturados" value={String(contactsCount)} />
         <StatCard
           label="Fora do horario"
@@ -67,14 +71,15 @@ export default async function PainelPage({
         />
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-5">
+      <div className="glass rounded-2xl p-5">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-sm font-semibold text-neutral-800">Conversas por horario do dia</h2>
-          <span className="text-xs text-neutral-400 flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> fora do horario comercial
+          <h2 className="text-sm font-semibold text-white/85">Conversas por horario do dia</h2>
+          <span className="text-xs text-white/35 flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] inline-block" />
+            fora do horario comercial
           </span>
         </div>
-        <p className="text-xs text-neutral-500 mb-4">
+        <p className="text-xs text-white/40 mb-4">
           Tudo em verde e atendimento que so aconteceu porque a IA nunca dorme.
         </p>
         <HourlyChart data={hourBuckets} />
@@ -95,12 +100,25 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-4">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={`text-2xl font-semibold mt-1 ${highlight ? "text-emerald-600" : "text-neutral-900"}`}>
+    <div
+      className={`glass rounded-2xl p-4 relative overflow-hidden ${
+        highlight ? "border-emerald-400/30" : ""
+      }`}
+    >
+      {highlight && (
+        <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-emerald-400/20 blur-2xl pointer-events-none" />
+      )}
+      <div className="text-xs text-white/45">{label}</div>
+      <div
+        className={`text-3xl font-semibold mt-1 tracking-tight ${
+          highlight
+            ? "bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent"
+            : ""
+        }`}
+      >
         {value}
       </div>
-      {hint && <div className="text-xs text-neutral-400 mt-1">{hint}</div>}
+      {hint && <div className="text-xs text-white/35 mt-1">{hint}</div>}
     </div>
   );
 }

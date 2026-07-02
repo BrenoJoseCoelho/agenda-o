@@ -9,56 +9,48 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <div className="glow-emerald w-105 h-105 -top-40 -left-20" />
+      <div className="glow-emerald w-80 h-80 bottom-0 right-0 opacity-60" />
+
+      <div className="relative w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-2xl font-bold text-emerald-600">Atende AI</div>
-          <p className="text-sm text-neutral-500 mt-1">
-            Seu WhatsApp atende e agenda sozinho.
+          <div className="text-3xl font-bold tracking-tight">
+            <span className="bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent">
+              Atende AI
+            </span>
+          </div>
+          <p className="text-sm text-white/50 mt-2">
+            Seu WhatsApp atende e agenda sozinho, 24h.
           </p>
         </div>
 
-        <form action={loginAction} className="bg-white border border-neutral-200 rounded-xl p-6 space-y-4 shadow-sm">
-          <h1 className="text-lg font-semibold text-neutral-900">Entrar</h1>
+        <form action={loginAction} className="glass rounded-2xl p-6 space-y-4 shadow-2xl shadow-black/40">
+          <h1 className="text-lg font-semibold">Entrar</h1>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+            <div className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
               {error}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-neutral-700">Email</label>
-            <input
-              name="email"
-              type="email"
-              required
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="voce@negocio.com"
-            />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-white/70">Email</label>
+            <input name="email" type="email" required className="input-dark" placeholder="voce@negocio.com" />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-neutral-700">Senha</label>
-            <input
-              name="password"
-              type="password"
-              required
-              className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="********"
-            />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-white/70">Senha</label>
+            <input name="password" type="password" required className="input-dark" placeholder="********" />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2 text-sm font-medium transition-colors"
-          >
+          <button type="submit" className="btn-primary w-full">
             Entrar
           </button>
 
-          <p className="text-sm text-neutral-500 text-center">
+          <p className="text-sm text-white/40 text-center">
             Ainda nao tem conta?{" "}
-            <Link href="/registrar" className="text-emerald-600 font-medium">
+            <Link href="/registrar" className="text-emerald-400 font-medium hover:text-emerald-300">
               Criar conta
             </Link>
           </p>

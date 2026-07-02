@@ -7,11 +7,11 @@ export default function RegisterForm({ error }: { error?: string }) {
   const [orgType, setOrgType] = useState<"DONO" | "AGENCIA">("DONO");
 
   return (
-    <form action={registerAction} className="bg-white border border-neutral-200 rounded-xl p-6 space-y-4 shadow-sm">
-      <h1 className="text-lg font-semibold text-neutral-900">Criar conta</h1>
+    <form action={registerAction} className="glass rounded-2xl p-6 space-y-4 shadow-2xl shadow-black/40">
+      <h1 className="text-lg font-semibold">Criar conta</h1>
 
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <div className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
           {error}
         </div>
       )}
@@ -20,10 +20,10 @@ export default function RegisterForm({ error }: { error?: string }) {
         <button
           type="button"
           onClick={() => setOrgType("DONO")}
-          className={`rounded-md border px-3 py-2 text-sm font-medium text-left transition-colors ${
+          className={`rounded-lg border px-3 py-2.5 text-sm font-medium text-left transition-all ${
             orgType === "DONO"
-              ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-              : "border-neutral-300 text-neutral-600"
+              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              : "border-white/10 bg-white/5 text-white/50 hover:text-white/80"
           }`}
         >
           Sou dono do negocio
@@ -31,10 +31,10 @@ export default function RegisterForm({ error }: { error?: string }) {
         <button
           type="button"
           onClick={() => setOrgType("AGENCIA")}
-          className={`rounded-md border px-3 py-2 text-sm font-medium text-left transition-colors ${
+          className={`rounded-lg border px-3 py-2.5 text-sm font-medium text-left transition-all ${
             orgType === "AGENCIA"
-              ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-              : "border-neutral-300 text-neutral-600"
+              ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              : "border-white/10 bg-white/5 text-white/50 hover:text-white/80"
           }`}
         >
           Sou agencia
@@ -42,70 +42,49 @@ export default function RegisterForm({ error }: { error?: string }) {
       </div>
       <input type="hidden" name="orgType" value={orgType} />
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-700">Seu nome</label>
-        <input
-          name="name"
-          required
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-white/70">Seu nome</label>
+        <input name="name" required className="input-dark" />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-700">Email</label>
-        <input
-          name="email"
-          type="email"
-          required
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-white/70">Email</label>
+        <input name="email" type="email" required className="input-dark" />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-700">Senha</label>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={6}
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-white/70">Senha</label>
+        <input name="password" type="password" required minLength={6} className="input-dark" />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-700">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-white/70">
           {orgType === "DONO" ? "Nome do seu negocio" : "Nome da sua agencia"}
         </label>
         <input
           name="orgName"
           required
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="input-dark"
           placeholder={orgType === "DONO" ? "Barbearia do Ze" : "Agencia XYZ"}
         />
       </div>
 
       {orgType === "DONO" && (
-        <div className="space-y-1">
-          <label className="text-sm font-medium text-neutral-700">Nome do estabelecimento (aparece no WhatsApp)</label>
-          <input
-            name="businessName"
-            required
-            className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Barbearia do Ze"
-          />
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-white/70">
+            Nome do estabelecimento (aparece no WhatsApp)
+          </label>
+          <input name="businessName" required className="input-dark" placeholder="Barbearia do Ze" />
         </div>
       )}
 
       {orgType === "AGENCIA" && (
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-white/40">
           Depois de criar a conta, voce adiciona os clientes (sub-contas) na aba Organizacao.
         </p>
       )}
 
-      <button
-        type="submit"
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2 text-sm font-medium transition-colors"
-      >
+      <button type="submit" className="btn-primary w-full">
         Criar conta
       </button>
     </form>
