@@ -52,6 +52,11 @@ enum CalendarConnectionStatus {
   REVOGADA
 }
 
+enum WhatsappProvider {
+  META
+  D360
+}
+
 enum Formality {
   INFORMAL
   NEUTRO
@@ -110,10 +115,14 @@ model Business {
   examples    String?    // exemplos de conversa (cliente/atendente) para a IA imitar o jeito
   avoid       String?    // o que a IA nunca deve dizer, alem das regras
 
-  // WhatsApp Cloud API credentials (filled when the business connects a real number)
+  // WhatsApp connection. provider decides how outbound messages are sent.
+  // Inbound routing uses whatsappPhoneNumberId (Cloud API format for both).
+  whatsappProvider      WhatsappProvider @default(META)
   whatsappPhoneNumberId String?
-  whatsappAccessToken   String?
+  whatsappAccessToken   String? // Meta Cloud API access token
   whatsappVerifyToken   String?
+  whatsappApiKey        String? // 360dialog D360-API-KEY
+  whatsappChannelId     String? // 360dialog channel id
 
   billingStatus BillingStatus @default(TRIAL)
 

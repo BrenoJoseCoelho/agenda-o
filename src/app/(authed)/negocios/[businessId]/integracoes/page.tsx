@@ -1,18 +1,25 @@
 import { requireBusiness } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { PROVIDER_META } from "@/lib/calendar";
+import { isWhatsappConnected } from "@/lib/whatsapp";
+import { d360Configured } from "@/lib/whatsapp/onboarding";
 import {
   disconnectCalendarAction,
   generateIcsTokenAction,
   revokeIcsTokenAction,
+  disconnectWhatsappAction,
 } from "@/app/actions/integration-actions";
+import { updateWhatsappAction } from "@/app/actions/business-actions";
 import CopyField from "./CopyField";
 
 const OK_MESSAGES: Record<string, string> = {
   google_conectado: "Google Calendar conectado com sucesso.",
+  whatsapp_conectado: "WhatsApp conectado com sucesso.",
 };
 const ERROR_MESSAGES: Record<string, string> = {
   google_nao_configurado: "Google Calendar ainda nao foi configurado no servidor (GOOGLE_CLIENT_ID).",
+  whatsapp_nao_configurado:
+    "A conexao rapida de WhatsApp ainda nao foi configurada no servidor (D360_PARTNER_ID). Use o modo avancado por enquanto.",
   conexao_cancelada: "Conexao cancelada.",
   falha_ao_conectar: "Falha ao conectar. Tente novamente.",
 };
@@ -41,14 +48,19 @@ export default async function IntegracoesPage({
   const disconnectGoogle = disconnectCalendarAction.bind(null, businessId, "GOOGLE");
   const genIcs = generateIcsTokenAction.bind(null, businessId);
   const revokeIcs = revokeIcsTokenAction.bind(null, businessId);
+  const updateWhatsapp = updateWhatsappAction.bind(null, businessId);
+  const disconnectWhatsapp = disconnectWhatsappAction.bind(null, businessId);
+
+  const whatsappOn = isWhatsappConnected(business);
+  const whatsappQuickAvailable = d360Configured();
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-1">Integracoes de agenda</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-1">Integracoes</h1>
         <p className="text-sm text-2 mt-1">
-          Conecte a agenda do negocio. A IA checa conflitos antes de marcar e joga o agendamento
-          direto no calendario.
+          Conecte o WhatsApp e a agenda do negocio. A IA atende no seu numero e checa conflitos
+          antes de marcar.
         </p>
       </div>
 
@@ -62,6 +74,88 @@ export default async function IntegracoesPage({
           {ERROR_MESSAGES[error]}
         </div>
       )}
+
+      {/* WhatsApp — a conexao mais importante, no topo */}
+      <div className="glass rounded-2xl p-5 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <WhatsappIcon />
+            <div>
+              <div className="text-sm font-semibold text-1">WhatsApp</div>
+              <div className="text-xs text-2 mt-0.5">
+                Conecte o numero que a {business.aiName} vai atender.
+              </div>
+            </div>
+          </div>
+          <span
+            className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${
+              whatsappOn
+                ? "bg-emerald-400/10 text-emerald-500 border border-emerald-400/25"
+                : "bg-soft text-3 bd border"
+            }`}
+          >
+            {whatsappOn ? "Conectado" : "Nao conectado"}
+          </span>
+        </div>
+
+        {whatsappOn ? (
+          <div className="flex items-center justify-between border-t bd pt-4">
+            <div className="text-sm text-2">
+              Conectado via{" "}
+              <span className="text-1">
+                {business.whatsappProvider === "D360" ? "360dialog" : "Meta Cloud API"}
+              </span>
+            </div>
+            <form action={disconnectWhatsapp}>
+              <button className="btn-ghost text-red-500" type="submit">
+                Desconectar
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="border-t bd pt-4 space-y-4">
+            {whatsappQuickAvailable ? (
+              <div className="space-y-2">
+                <a
+                  href={`/api/integrations/whatsapp/d360/connect?businessId=${businessId}`}
+                  className="btn-primary inline-block w-fit"
+                >
+                  Conectar WhatsApp
+                </a>
+                <p className="text-xs text-3">
+                  Conexao em 1 clique — voce escolhe o numero e autoriza, sem colar nada.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-3">
+                A conexao em 1 clique precisa do <code className="text-emerald-500">D360_PARTNER_ID</code>{" "}
+                configurado no servidor. Enquanto isso, use o modo avancado abaixo.
+              </p>
+            )}
+
+            <details className="group">
+              <summary className="text-xs text-2 cursor-pointer hover:text-1 select-none">
+                Modo avancado — conectar direto pela Meta Cloud API
+              </summary>
+              <form action={updateWhatsapp} className="grid grid-cols-2 gap-4 mt-3">
+                <SmallField
+                  label="Phone Number ID"
+                  name="whatsappPhoneNumberId"
+                  defaultValue={business.whatsappPhoneNumberId ?? ""}
+                />
+                <SmallField
+                  label="Access Token"
+                  name="whatsappAccessToken"
+                  defaultValue={business.whatsappAccessToken ?? ""}
+                />
+                <button type="submit" className="btn-ghost col-span-2 w-fit">
+                  Salvar credenciais da Meta
+                </button>
+              </form>
+            </details>
+          </div>
+        )}
+      </div>
 
       {/* Google Calendar */}
       <div className="glass rounded-2xl p-5 space-y-4">
@@ -157,6 +251,33 @@ export default async function IntegracoesPage({
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SmallField({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-2">{label}</label>
+      <input name={name} defaultValue={defaultValue} className="input-app" />
+    </div>
+  );
+}
+
+function WhatsappIcon() {
+  return (
+    <div className="w-9 h-9 rounded-lg bg-[#25D366] flex items-center justify-center shrink-0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+        <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.19 1.87.12.57-.09 1.76-.72 2-1.42.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35zM12.05 21.5h-.01a9.5 9.5 0 0 1-4.84-1.33l-.35-.2-3.6.94.96-3.5-.23-.36a9.46 9.46 0 0 1-1.45-5.05C2.55 6.74 6.8 2.5 12.06 2.5c2.53 0 4.9.99 6.69 2.78a9.4 9.4 0 0 1 2.77 6.69c0 5.25-4.25 9.53-9.47 9.53z" />
+      </svg>
     </div>
   );
 }

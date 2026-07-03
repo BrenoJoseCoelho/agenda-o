@@ -4,7 +4,6 @@ import {
   updateBrainAction,
   addServiceAction,
   removeServiceAction,
-  updateWhatsappAction,
 } from "@/app/actions/business-actions";
 import PersonaPresets from "./PersonaPresets";
 
@@ -26,8 +25,6 @@ export default async function CerebroPage({
 
   const updateAction = updateBrainAction.bind(null, businessId);
   const addService = addServiceAction.bind(null, businessId);
-  const updateWhatsapp = updateWhatsappAction.bind(null, businessId);
-  const whatsappConnected = Boolean(business.whatsappPhoneNumberId && business.whatsappAccessToken);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -167,43 +164,10 @@ export default async function CerebroPage({
         </form>
       </div>
 
-      <div className="glass rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-1 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-            Integracao com WhatsApp
-          </h2>
-          <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-              whatsappConnected
-                ? "bg-emerald-400/10 text-emerald-500 border border-emerald-400/25"
-                : "bg-soft text-3 bd border"
-            }`}
-          >
-            {whatsappConnected ? "Conectado" : "Nao conectado"}
-          </span>
-        </div>
-        <p className="text-xs text-2">
-          Conecte um numero via WhatsApp Cloud API (Meta) para a {business.aiName} responder no
-          WhatsApp real. Ate la, use a aba Conversas para testar. Webhook:{" "}
-          <code className="text-emerald-500">/api/whatsapp/webhook</code>.
-        </p>
-        <form action={updateWhatsapp} className="grid grid-cols-2 gap-4">
-          <Field
-            label="Phone Number ID"
-            name="whatsappPhoneNumberId"
-            defaultValue={business.whatsappPhoneNumberId ?? ""}
-          />
-          <Field
-            label="Access Token"
-            name="whatsappAccessToken"
-            defaultValue={business.whatsappAccessToken ?? ""}
-          />
-          <button type="submit" className="btn-ghost col-span-2 w-fit">
-            Salvar integracao
-          </button>
-        </form>
-      </div>
+      <p className="text-xs text-3">
+        Para conectar o WhatsApp e a agenda, va na aba{" "}
+        <span className="text-emerald-500">Integracoes</span>.
+      </p>
     </div>
   );
 }

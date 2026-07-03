@@ -31,3 +31,18 @@ export async function revokeIcsTokenAction(businessId: string) {
   await prisma.business.update({ where: { id: business.id }, data: { icsToken: null } });
   revalidatePath(`/negocios/${business.id}/integracoes`);
 }
+
+export async function disconnectWhatsappAction(businessId: string) {
+  const { business } = await requireBusiness(businessId);
+  await prisma.business.update({
+    where: { id: business.id },
+    data: {
+      whatsappProvider: "META",
+      whatsappApiKey: null,
+      whatsappChannelId: null,
+      whatsappPhoneNumberId: null,
+      whatsappAccessToken: null,
+    },
+  });
+  revalidatePath(`/negocios/${business.id}/integracoes`);
+}
