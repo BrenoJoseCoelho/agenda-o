@@ -10,7 +10,8 @@ export async function proxy(request: NextRequest) {
     PUBLIC_PATHS.some((p) => pathname === p) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/whatsapp/webhook") ||
-    pathname.startsWith("/api/calendar");
+    pathname.startsWith("/api/calendar") ||
+    pathname.startsWith("/api/cron");
 
   if (isPublic) return NextResponse.next();
 
@@ -28,6 +29,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/auth|api/whatsapp/webhook|api/calendar).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/auth|api/whatsapp/webhook|api/calendar|api/cron).*)",
   ],
 };

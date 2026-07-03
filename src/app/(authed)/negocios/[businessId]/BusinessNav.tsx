@@ -7,6 +7,7 @@ const TABS = [
   { key: "painel", label: "Painel" },
   { key: "conversas", label: "Conversas" },
   { key: "cerebro", label: "Cerebro" },
+  { key: "automacoes", label: "Automacoes" },
   { key: "integracoes", label: "Integracoes" },
   { key: "plano", label: "Plano" },
 ];

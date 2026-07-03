@@ -12,7 +12,7 @@ export async function processIncomingMessage(params: {
 
   const conversation = await prisma.conversation.findUniqueOrThrow({
     where: { id: conversationId },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
+    include: { messages: { orderBy: { createdAt: "asc" } }, contact: true },
   });
 
   const customerMessage = await prisma.message.create({
@@ -29,7 +29,38 @@ export async function processIncomingMessage(params: {
     content: m.content,
   }));
 
-  const result = await generateAiReply({ business, services, history });
+  // Client memory: give the AI this person's known preferences + booking history.
+  let contactContext;
+  if (business.clientMemoryEnabled) {
+    const pastAppts = await prisma.appointment.findMany({
+      where: { contactId: conversation.contactId, status: { not: "CANCELADO" } },
+      include: { service: true },
+      orderBy: { scheduledAt: "desc" },
+      take: 5,
+    });
+    const pastSummary = pastAppts.length
+      ? pastAppts
+          .map((a) => `${a.service.name} em ${a.scheduledAt.toLocaleDateString("pt-BR")}`)
+          .join("; ")
+      : undefined;
+    contactContext = {
+      name: conversation.contact.name,
+      memory: conversation.contact.memory,
+      pastSummary,
+    };
+  }
+
+  const result = await generateAiReply({ business, services, history, contact: contactContext });
+
+  // Persist any new preference the AI decided to remember about this client.
+  if (result.memory) {
+    const prev = conversation.contact.memory?.trim();
+    const merged = prev ? `${prev}; ${result.memory}` : result.memory;
+    await prisma.contact.update({
+      where: { id: conversation.contactId },
+      data: { memory: merged.slice(0, 1000) },
+    });
+  }
 
   let status = conversation.status;
   let reply = result.reply;

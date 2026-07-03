@@ -165,7 +165,8 @@ export default async function CerebroPage({
       </div>
 
       <p className="text-xs text-3">
-        Para conectar o WhatsApp e a agenda, va na aba{" "}
+        Para ligar recuperacao de clientes, lembretes e memoria, va na aba{" "}
+        <span className="text-emerald-500">Automacoes</span>. Para conectar WhatsApp e agenda, aba{" "}
         <span className="text-emerald-500">Integracoes</span>.
       </p>
     </div>

@@ -133,6 +133,13 @@ model Business {
   billingStatus BillingStatus @default(TRIAL)
   plan          Plan          @default(PROFISSIONAL)
 
+  // Automacoes proativas — o dono liga/desliga cada uma no Cerebro.
+  winBackEnabled        Boolean @default(true)  // recupera cliente que sumiu
+  winBackDays           Int     @default(3)     // dias de silencio para reengajar
+  noShowReminderEnabled Boolean @default(true)  // lembrete no dia anterior
+  idleSlotEnabled       Boolean @default(false) // oferece horario ocioso
+  clientMemoryEnabled   Boolean @default(true)  // IA lembra o historico do cliente
+
   // Token for the read-only ICS calendar feed (subscribe from any calendar app).
   // Lazily generated the first time the feed is opened in the UI.
   icsToken String? @unique
@@ -189,6 +196,7 @@ model Contact {
 
   name      String
   phone     String
+  memory    String?  // preferencias/observacoes que a IA acumula sobre o cliente
   createdAt DateTime @default(now())
 
   conversations Conversation[]
@@ -206,6 +214,7 @@ model Conversation {
 
   status        ConversationStatus @default(NOVA)
   lastMessageAt DateTime           @default(now())
+  winBackSentAt DateTime?          // quando a IA reengajou este contato que sumiu
   createdAt     DateTime           @default(now())
 
   messages     Message[]
@@ -233,9 +242,10 @@ model Appointment {
   conversationId String?
   conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
 
-  scheduledAt DateTime
-  status      AppointmentStatus @default(CONFIRMADO)
-  createdAt   DateTime          @default(now())
+  scheduledAt    DateTime
+  status         AppointmentStatus @default(CONFIRMADO)
+  reminderSentAt DateTime?         // lembrete anti no-show ja enviado
+  createdAt      DateTime          @default(now())
 
   // When pushed to an external calendar, which provider + event id, so we can
   // update/cancel it later.

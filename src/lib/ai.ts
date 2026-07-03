@@ -7,9 +7,13 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 
 export type HistoryItem = { sender: "CLIENTE" | "IA" | "HUMANO"; content: string };
 
+// What the AI knows about the person on the other side (client memory feature).
+export type ContactContext = { name: string; memory?: string | null; pastSummary?: string };
+
 export type AiResult = {
   reply: string;
   appointment?: { serviceId: string; scheduledAt: Date };
+  memory?: string; // uma preferencia que a IA quer guardar sobre o cliente
 };
 
 // The AI model scales with the customer's plan, so quality rises with price and
@@ -28,11 +32,18 @@ function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function buildSystemPrompt(business: Business, services: Service[]) {
+function buildSystemPrompt(business: Business, services: Service[], contact?: ContactContext) {
   const serviceLines =
     services
       .map((s) => `- ${s.name}: ${formatPrice(s.priceCents)} (${s.durationMinutes} min)`)
       .join("\n") || "Nenhum servico cadastrado ainda.";
+
+  const contactBlock =
+    contact && (contact.memory || contact.pastSummary)
+      ? `\n# QUEM E ESTE CLIENTE (use com naturalidade, sem soar invasiva)\nNome: ${contact.name}\n${
+          contact.memory ? `O que voce ja sabe dele: ${contact.memory}\n` : ""
+        }${contact.pastSummary ? `Historico: ${contact.pastSummary}\n` : ""}`
+      : "";
 
   const today = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
@@ -85,6 +96,11 @@ Servicos e precos:
 ${serviceLines}
 
 Regras do negocio (siga a risca): ${business.rules}
+${contactBlock}${
+    business.clientMemoryEnabled
+      ? '\n# MEMORIA\nSe o cliente revelar uma preferencia util e duradoura (ex: "sempre faco corte e barba", "so posso sabado"), chame a ferramenta "salvar_memoria" para lembrar nas proximas conversas. Use o que voce ja sabe dele acima para deixar o atendimento pessoal, sem parecer que esta lendo uma ficha.\n'
+      : ""
+  }
 
 # HONESTIDADE
 Nunca invente servico, preco, horario ou promocao que nao esteja na lista acima. Se o cliente pedir algo que voce nao tem certeza, diga que vai confirmar com a equipe e pede um instantinho — nunca chute.
@@ -115,6 +131,22 @@ const bookingTool: Anthropic.Tool = {
   },
 };
 
+const memoryTool: Anthropic.Tool = {
+  name: "salvar_memoria",
+  description:
+    "Guarda uma preferencia ou observacao util e duradoura sobre ESTE cliente (ex: sempre faz corte + barba, prefere sabados de manha, gosta de conversar pouco). Use quando o cliente revelar algo que vale lembrar nas proximas conversas. Nao guarde dados sensiveis.",
+  input_schema: {
+    type: "object",
+    properties: {
+      observacao: {
+        type: "string",
+        description: "A preferencia/observacao a lembrar, curta e objetiva.",
+      },
+    },
+    required: ["observacao"],
+  },
+};
+
 function matchService(services: Service[], name: string) {
   const lower = name.toLowerCase().trim();
   return (
@@ -127,15 +159,18 @@ export async function generateAiReply(params: {
   business: Business;
   services: Service[];
   history: HistoryItem[];
+  contact?: ContactContext;
 }): Promise<AiResult> {
-  const { business, services, history } = params;
+  const { business, services, history, contact } = params;
 
   if (!anthropic) {
     return heuristicReply(business, services, history);
   }
 
-  const system = buildSystemPrompt(business, services);
+  const memoryOn = business.clientMemoryEnabled;
+  const system = buildSystemPrompt(business, services, memoryOn ? contact : undefined);
   const model = modelForPlan(business.plan);
+  const tools = memoryOn ? [bookingTool, memoryTool] : [bookingTool];
   const baseMessages: Anthropic.MessageParam[] = history.map((m) => ({
     role: m.sender === "CLIENTE" ? "user" : "assistant",
     content: m.content,
@@ -145,59 +180,70 @@ export async function generateAiReply(params: {
     model,
     max_tokens: 500,
     system,
-    tools: [bookingTool],
+    tools,
     messages: baseMessages,
   });
 
-  const toolUse = first.content.find(
-    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "agendar_horario"
-  );
+  const toolUses = first.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
 
-  if (!toolUse) {
-    const reply =
-      first.content
-        .filter((b): b is Anthropic.TextBlock => b.type === "text")
-        .map((b) => b.text)
-        .join("\n")
-        .trim() || "Desculpa, pode repetir?";
-    return { reply };
+  const textOf = (msg: Anthropic.Message) =>
+    msg.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
+
+  if (toolUses.length === 0) {
+    return { reply: textOf(first) || "Desculpa, pode repetir?" };
   }
 
-  const input = toolUse.input as { servico: string; data_hora_iso: string };
-  const service = matchService(services, input.servico);
-  const scheduledAt = new Date(input.data_hora_iso);
-  const valid = Boolean(service) && !Number.isNaN(scheduledAt.getTime());
+  // Execute every tool the model asked for and collect a result for each.
+  let appointment: AiResult["appointment"];
+  let memory: string | undefined;
+  let booked = false;
+  const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
-  const toolResultContent = valid
-    ? `Agendamento confirmado: ${service!.name} em ${scheduledAt.toLocaleString("pt-BR")}.`
-    : "Nao foi possivel confirmar: servico ou horario invalido. Peça mais detalhes ao cliente.";
+  for (const tu of toolUses) {
+    if (tu.name === "agendar_horario") {
+      const input = tu.input as { servico: string; data_hora_iso: string };
+      const service = matchService(services, input.servico);
+      const scheduledAt = new Date(input.data_hora_iso);
+      const valid = Boolean(service) && !Number.isNaN(scheduledAt.getTime());
+      booked = valid;
+      appointment = valid ? { serviceId: service!.id, scheduledAt } : undefined;
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: tu.id,
+        content: valid
+          ? `Agendamento confirmado: ${service!.name} em ${scheduledAt.toLocaleString("pt-BR")}.`
+          : "Nao foi possivel confirmar: servico ou horario invalido. Peça mais detalhes ao cliente.",
+      });
+    } else if (tu.name === "salvar_memoria") {
+      const input = tu.input as { observacao: string };
+      memory = String(input.observacao || "").trim() || undefined;
+      toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: "Anotado." });
+    } else {
+      toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: "ok" });
+    }
+  }
 
   const second = await anthropic.messages.create({
     model,
     max_tokens: 300,
     system,
-    tools: [bookingTool],
+    tools,
     messages: [
       ...baseMessages,
       { role: "assistant", content: first.content },
-      {
-        role: "user",
-        content: [{ type: "tool_result", tool_use_id: toolUse.id, content: toolResultContent }],
-      },
+      { role: "user", content: toolResults },
     ],
   });
 
   const reply =
-    second.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim() || (valid ? "Perfeito, agendado! Te espero." : "Pode confirmar de novo o servico e o horario?");
+    textOf(second) ||
+    (booked ? "Perfeito, agendado! Te espero." : "Pode confirmar de novo o servico e o horario?");
 
-  return {
-    reply,
-    appointment: valid ? { serviceId: service!.id, scheduledAt } : undefined,
-  };
+  return { reply, appointment, memory };
 }
 
 // Several services can share a first word (e.g. "Corte masculino" / "Corte + Barba"), so a

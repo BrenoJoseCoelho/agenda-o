@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness, requireSession } from "@/lib/access";
+import { runAutomationsForBusiness } from "@/lib/automations";
 
 function slugify(name: string) {
   const stripped = name
@@ -91,6 +92,32 @@ export async function removeServiceAction(businessId: string, serviceId: string)
   const { business } = await requireBusiness(businessId);
   await prisma.service.delete({ where: { id: serviceId } });
   revalidatePath(`/negocios/${business.id}/cerebro`);
+}
+
+export async function updateAutomationsAction(businessId: string, formData: FormData) {
+  const { business } = await requireBusiness(businessId);
+  const on = (name: string) => formData.get(name) === "on";
+  const days = parseInt(String(formData.get("winBackDays") || business.winBackDays), 10);
+
+  await prisma.business.update({
+    where: { id: business.id },
+    data: {
+      winBackEnabled: on("winBackEnabled"),
+      noShowReminderEnabled: on("noShowReminderEnabled"),
+      idleSlotEnabled: on("idleSlotEnabled"),
+      clientMemoryEnabled: on("clientMemoryEnabled"),
+      winBackDays: Number.isNaN(days) || days < 1 ? business.winBackDays : days,
+    },
+  });
+
+  revalidatePath(`/negocios/${business.id}/automacoes`);
+  revalidatePath(`/negocios/${business.id}/cerebro`);
+}
+
+export async function runAutomationsNowAction(businessId: string) {
+  const { business } = await requireBusiness(businessId);
+  await runAutomationsForBusiness(business);
+  revalidatePath(`/negocios/${business.id}/automacoes`);
 }
 
 export async function updatePlanAction(businessId: string, plan: "ESSENCIAL" | "PROFISSIONAL" | "ILIMITADO") {
