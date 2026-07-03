@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "Plan" AS ENUM ('ESSENCIAL', 'PROFISSIONAL', 'ILIMITADO');
+
+-- AlterTable
+ALTER TABLE "Business" ADD COLUMN     "plan" "Plan" NOT NULL DEFAULT 'PROFISSIONAL';
+

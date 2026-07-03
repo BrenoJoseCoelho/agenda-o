@@ -12,9 +12,17 @@ export type AiResult = {
   appointment?: { serviceId: string; scheduledAt: Date };
 };
 
-// Default to Opus 4.8 (most capable). Override with ANTHROPIC_MODEL for a
-// cheaper/faster tier on high volume, e.g. "claude-sonnet-5" or "claude-haiku-4-5".
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+// The AI model scales with the customer's plan, so quality rises with price and
+// margin stays protected per tier. ANTHROPIC_MODEL (if set) overrides everything.
+const PLAN_MODEL: Record<string, string> = {
+  ESSENCIAL: "claude-haiku-4-5",
+  PROFISSIONAL: "claude-sonnet-5",
+  ILIMITADO: "claude-opus-4-8",
+};
+
+function modelForPlan(plan: string): string {
+  return process.env.ANTHROPIC_MODEL || PLAN_MODEL[plan] || "claude-sonnet-5";
+}
 
 function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -110,13 +118,14 @@ export async function generateAiReply(params: {
   }
 
   const system = buildSystemPrompt(business, services);
+  const model = modelForPlan(business.plan);
   const baseMessages: Anthropic.MessageParam[] = history.map((m) => ({
     role: m.sender === "CLIENTE" ? "user" : "assistant",
     content: m.content,
   }));
 
   const first = await anthropic.messages.create({
-    model: MODEL,
+    model,
     max_tokens: 500,
     system,
     tools: [bookingTool],
@@ -147,7 +156,7 @@ export async function generateAiReply(params: {
     : "Nao foi possivel confirmar: servico ou horario invalido. Peça mais detalhes ao cliente.";
 
   const second = await anthropic.messages.create({
-    model: MODEL,
+    model,
     max_tokens: 300,
     system,
     tools: [bookingTool],

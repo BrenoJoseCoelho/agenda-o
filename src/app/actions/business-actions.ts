@@ -93,6 +93,13 @@ export async function removeServiceAction(businessId: string, serviceId: string)
   revalidatePath(`/negocios/${business.id}/cerebro`);
 }
 
+export async function updatePlanAction(businessId: string, plan: "ESSENCIAL" | "PROFISSIONAL" | "ILIMITADO") {
+  const { business } = await requireBusiness(businessId);
+  // Once Stripe is wired, this action becomes the success handler after checkout.
+  await prisma.business.update({ where: { id: business.id }, data: { plan } });
+  revalidatePath(`/negocios/${business.id}/plano`);
+}
+
 export async function updateWhatsappAction(businessId: string, formData: FormData) {
   const { business } = await requireBusiness(businessId);
 

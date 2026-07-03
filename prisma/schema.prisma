@@ -41,6 +41,12 @@ enum BillingStatus {
   PAUSADO
 }
 
+enum Plan {
+  ESSENCIAL
+  PROFISSIONAL
+  ILIMITADO
+}
+
 enum CalendarProvider {
   GOOGLE
   OUTLOOK
@@ -125,6 +131,7 @@ model Business {
   whatsappChannelId     String? // 360dialog channel id
 
   billingStatus BillingStatus @default(TRIAL)
+  plan          Plan          @default(PROFISSIONAL)
 
   // Token for the read-only ICS calendar feed (subscribe from any calendar app).
   // Lazily generated the first time the feed is opened in the UI.
