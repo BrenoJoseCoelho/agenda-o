@@ -120,3 +120,22 @@ export async function pushEventToCalendar(params: {
     return null;
   }
 }
+
+// Best-effort removal of an event on the connected external calendar (on cancel/reschedule).
+export async function deleteExternalEvent(
+  businessId: string,
+  provider: CalendarProvider,
+  eventId: string
+): Promise<void> {
+  const connection = await prisma.calendarConnection.findFirst({
+    where: { businessId, provider, status: "ATIVA" },
+  });
+  if (!connection) return;
+  const adapter = getAdapter(provider);
+  if (!adapter?.isConfigured()) return;
+  try {
+    await adapter.deleteEvent(connection, eventId);
+  } catch {
+    // ignore — the internal record is the source of truth
+  }
+}
