@@ -30,6 +30,22 @@ function greetingSuffix(business: Business) {
   return business.signature ? ` ${business.signature}` : "";
 }
 
+// Preenche as variaveis {cliente} {negocio} {servico} {horario} {assinatura}
+// no modelo editado pelo dono.
+function renderTemplate(
+  template: string,
+  vars: { cliente: string; negocio: string; servico?: string; horario?: string; assinatura?: string }
+): string {
+  return template
+    .replace(/\{cliente\}/gi, vars.cliente)
+    .replace(/\{negocio\}/gi, vars.negocio)
+    .replace(/\{servico\}/gi, vars.servico ?? "")
+    .replace(/\{horario\}/gi, vars.horario ?? "")
+    .replace(/\{assinatura\}/gi, vars.assinatura ?? "")
+    .replace(/[ ]{2,}/g, " ")
+    .trim();
+}
+
 // 1) WIN-BACK — cliente que demonstrou interesse e sumiu sem agendar.
 async function winBackCandidates(business: Business): Promise<AutomationCandidate[]> {
   if (!business.winBackEnabled) return [];
@@ -49,17 +65,26 @@ async function winBackCandidates(business: Business): Promise<AutomationCandidat
 
   return conversations
     .filter((c) => c.messages.length > 0)
-    .map((c) => ({
-      kind: "WIN_BACK" as const,
-      contactId: c.contactId,
-      contactName: c.contact.name,
-      phone: c.contact.phone,
-      conversationId: c.id,
-      message:
-        `Oi ${firstName(c.contact.name)}! Aqui e a ${business.aiName} da ${business.name} 😊 ` +
-        `Vi que voce chegou a falar com a gente mas nao fechou seu horario. ` +
-        `Quer que eu ja deixe marcado?${greetingSuffix(business)}`,
-    }));
+    .map((c) => {
+      const cliente = firstName(c.contact.name);
+      const message = business.winBackTemplate
+        ? renderTemplate(business.winBackTemplate, {
+            cliente,
+            negocio: business.name,
+            assinatura: business.signature ?? "",
+          })
+        : `Oi ${cliente}! Aqui e a ${business.aiName} da ${business.name} 😊 ` +
+          `Vi que voce chegou a falar com a gente mas nao fechou seu horario. ` +
+          `Quer que eu ja deixe marcado?${greetingSuffix(business)}`;
+      return {
+        kind: "WIN_BACK" as const,
+        contactId: c.contactId,
+        contactName: c.contact.name,
+        phone: c.contact.phone,
+        conversationId: c.id,
+        message,
+      };
+    });
 }
 
 // 2) NO-SHOW — lembrete no dia anterior para quem tem horario marcado.
@@ -88,15 +113,24 @@ async function noShowCandidates(business: Business): Promise<AutomationCandidate
       hour: "2-digit",
       minute: "2-digit",
     });
+    const cliente = firstName(a.contact.name);
+    const message = business.noShowTemplate
+      ? renderTemplate(business.noShowTemplate, {
+          cliente,
+          negocio: business.name,
+          servico: a.service.name,
+          horario: when,
+          assinatura: business.signature ?? "",
+        })
+      : `Oi ${cliente}! So confirmando seu ${a.service.name} ${when}. ` +
+        `Ta de pe? Se precisar remarcar e so me avisar.${greetingSuffix(business)}`;
     return {
       kind: "NO_SHOW" as const,
       contactId: a.contactId,
       contactName: a.contact.name,
       phone: a.contact.phone,
       appointmentId: a.id,
-      message:
-        `Oi ${firstName(a.contact.name)}! So confirmando seu ${a.service.name} ${when}. ` +
-        `Ta de pe? Se precisar remarcar e so me avisar.${greetingSuffix(business)}`,
+      message,
     };
   });
 }
@@ -133,15 +167,24 @@ async function idleSlotCandidates(business: Business): Promise<AutomationCandida
     take: 10,
   });
 
-  return contacts.map((c) => ({
-    kind: "IDLE_SLOT" as const,
-    contactId: c.id,
-    contactName: c.name,
-    phone: c.phone,
-    message:
-      `Oi ${firstName(c.name)}! A ${business.name} ta com horarios livres amanha. ` +
-      `Quer aproveitar pra dar aquela renovada? Me fala o melhor horario que eu encaixo 😉${greetingSuffix(business)}`,
-  }));
+  return contacts.map((c) => {
+    const cliente = firstName(c.name);
+    const message = business.idleSlotTemplate
+      ? renderTemplate(business.idleSlotTemplate, {
+          cliente,
+          negocio: business.name,
+          assinatura: business.signature ?? "",
+        })
+      : `Oi ${cliente}! A ${business.name} ta com horarios livres amanha. ` +
+        `Quer aproveitar pra dar aquela renovada? Me fala o melhor horario que eu encaixo 😉${greetingSuffix(business)}`;
+    return {
+      kind: "IDLE_SLOT" as const,
+      contactId: c.id,
+      contactName: c.name,
+      phone: c.phone,
+      message,
+    };
+  });
 }
 
 // Junta os candidatos de todas as automacoes ligadas (para a previa na UI).

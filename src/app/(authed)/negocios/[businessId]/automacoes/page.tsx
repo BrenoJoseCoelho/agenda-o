@@ -38,41 +38,65 @@ export default async function AutomacoesPage({
         </p>
       </div>
 
-      <form action={save} className="glass rounded-2xl p-5 space-y-4">
-        <ToggleRow
-          name="winBackEnabled"
-          checked={business.winBackEnabled}
-          title="Recuperar cliente que sumiu"
-          desc="Reengaja quem demonstrou interesse e nao fechou horario."
-        />
-        <div className="flex items-center gap-2 pl-1 -mt-1">
-          <span className="text-xs text-2">Reengajar apos</span>
-          <input
-            name="winBackDays"
-            defaultValue={business.winBackDays}
-            className="input-app !w-16 text-center"
+      <form action={save} className="glass rounded-2xl p-5 space-y-5">
+        <div className="space-y-3">
+          <ToggleRow
+            name="winBackEnabled"
+            checked={business.winBackEnabled}
+            title="Recuperar cliente que sumiu"
+            desc="Reengaja quem demonstrou interesse e nao fechou horario."
           />
-          <span className="text-xs text-2">dias de silencio</span>
+          <div className="flex items-center gap-2 pl-1">
+            <span className="text-xs text-2">Reengajar apos</span>
+            <input name="winBackDays" defaultValue={business.winBackDays} className="input-app !w-16 text-center" />
+            <span className="text-xs text-2">dias de silencio</span>
+          </div>
+          <TemplateField
+            name="winBackTemplate"
+            value={business.winBackTemplate ?? ""}
+            vars="{cliente} {negocio} {assinatura}"
+            placeholder="Oi {cliente}! Vi que voce nao fechou seu horario. Quer que eu ja deixe marcado? {assinatura}"
+          />
         </div>
 
-        <ToggleRow
-          name="noShowReminderEnabled"
-          checked={business.noShowReminderEnabled}
-          title="Lembrete anti-falta"
-          desc="Confirma o horario no dia anterior para reduzir no-show."
-        />
-        <ToggleRow
-          name="idleSlotEnabled"
-          checked={business.idleSlotEnabled}
-          title="Encher horario ocioso"
-          desc="Quando a agenda de amanha esta vazia, oferece para clientes recentes."
-        />
-        <ToggleRow
-          name="clientMemoryEnabled"
-          checked={business.clientMemoryEnabled}
-          title="Memoria do cliente"
-          desc="A IA lembra preferencias e historico de cada cliente entre as conversas."
-        />
+        <div className="space-y-3 border-t bd pt-4">
+          <ToggleRow
+            name="noShowReminderEnabled"
+            checked={business.noShowReminderEnabled}
+            title="Lembrete anti-falta"
+            desc="Confirma o horario no dia anterior para reduzir no-show."
+          />
+          <TemplateField
+            name="noShowTemplate"
+            value={business.noShowTemplate ?? ""}
+            vars="{cliente} {servico} {horario} {negocio} {assinatura}"
+            placeholder="Oi {cliente}! So confirmando seu {servico} {horario}. Ta de pe? {assinatura}"
+          />
+        </div>
+
+        <div className="space-y-3 border-t bd pt-4">
+          <ToggleRow
+            name="idleSlotEnabled"
+            checked={business.idleSlotEnabled}
+            title="Encher horario ocioso"
+            desc="Quando a agenda de amanha esta vazia, oferece para clientes recentes."
+          />
+          <TemplateField
+            name="idleSlotTemplate"
+            value={business.idleSlotTemplate ?? ""}
+            vars="{cliente} {negocio} {assinatura}"
+            placeholder="Oi {cliente}! A {negocio} ta com horarios livres amanha. Quer aproveitar? {assinatura}"
+          />
+        </div>
+
+        <div className="border-t bd pt-4">
+          <ToggleRow
+            name="clientMemoryEnabled"
+            checked={business.clientMemoryEnabled}
+            title="Memoria do cliente"
+            desc="A IA lembra preferencias e historico de cada cliente entre as conversas."
+          />
+        </div>
 
         <button type="submit" className="btn-primary">
           Salvar automacoes
@@ -144,5 +168,33 @@ function ToggleRow({
       </div>
       <input type="checkbox" name={name} defaultChecked={checked} className="mt-1 w-4 h-4 accent-emerald-500 shrink-0" />
     </label>
+  );
+}
+
+function TemplateField({
+  name,
+  value,
+  vars,
+  placeholder,
+}: {
+  name: string;
+  value: string;
+  vars: string;
+  placeholder: string;
+}) {
+  return (
+    <div className="pl-1 space-y-1">
+      <div className="text-xs text-2">
+        Mensagem (deixe vazio para usar o padrao). Variaveis:{" "}
+        <code className="text-emerald-500">{vars}</code>
+      </div>
+      <textarea
+        name={name}
+        defaultValue={value}
+        rows={2}
+        placeholder={placeholder}
+        className="input-app resize-y text-sm"
+      />
+    </div>
   );
 }

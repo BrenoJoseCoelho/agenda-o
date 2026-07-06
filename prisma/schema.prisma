@@ -140,6 +140,12 @@ model Business {
   idleSlotEnabled       Boolean @default(false) // oferece horario ocioso
   clientMemoryEnabled   Boolean @default(true)  // IA lembra o historico do cliente
 
+  // Modelos de mensagem editaveis pelo dono. Vazio = usa o padrao.
+  // Variaveis: {cliente} {negocio} {servico} {horario} {assinatura}
+  winBackTemplate  String?
+  noShowTemplate   String?
+  idleSlotTemplate String?
+
   // Token for the read-only ICS calendar feed (subscribe from any calendar app).
   // Lazily generated the first time the feed is opened in the UI.
   icsToken String? @unique

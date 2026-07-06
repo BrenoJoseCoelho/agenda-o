@@ -99,6 +99,11 @@ export async function updateAutomationsAction(businessId: string, formData: Form
   const on = (name: string) => formData.get(name) === "on";
   const days = parseInt(String(formData.get("winBackDays") || business.winBackDays), 10);
 
+  const tpl = (name: string) => {
+    const v = String(formData.get(name) || "").trim();
+    return v || null;
+  };
+
   await prisma.business.update({
     where: { id: business.id },
     data: {
@@ -107,6 +112,9 @@ export async function updateAutomationsAction(businessId: string, formData: Form
       idleSlotEnabled: on("idleSlotEnabled"),
       clientMemoryEnabled: on("clientMemoryEnabled"),
       winBackDays: Number.isNaN(days) || days < 1 ? business.winBackDays : days,
+      winBackTemplate: tpl("winBackTemplate"),
+      noShowTemplate: tpl("noShowTemplate"),
+      idleSlotTemplate: tpl("idleSlotTemplate"),
     },
   });
 
