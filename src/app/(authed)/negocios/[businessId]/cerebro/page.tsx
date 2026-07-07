@@ -1,5 +1,6 @@
 import { requireBusiness } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { AUTOMATIONS_ENABLED } from "@/lib/features";
 import {
   updateBrainAction,
   addServiceAction,
@@ -166,8 +167,13 @@ export default async function CerebroPage({
       </div>
 
       <p className="text-xs text-3">
-        Para ligar recuperacao de clientes, lembretes e memoria, va na aba{" "}
-        <span className="text-emerald-500">Automacoes</span>. Para conectar WhatsApp e agenda, aba{" "}
+        {AUTOMATIONS_ENABLED && (
+          <>
+            Para ligar recuperacao de clientes, lembretes e memoria, va na aba{" "}
+            <span className="text-emerald-500">Automacoes</span>.{" "}
+          </>
+        )}
+        Para conectar WhatsApp e agenda, aba{" "}
         <span className="text-emerald-500">Integracoes</span>.
       </p>
     </div>

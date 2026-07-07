@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AUTOMATIONS_ENABLED } from "@/lib/features";
 
 const TABS = [
   { key: "painel", label: "Painel" },
   { key: "agenda", label: "Agenda" },
   { key: "conversas", label: "Conversas" },
   { key: "cerebro", label: "Cerebro" },
-  { key: "automacoes", label: "Automacoes" },
+  ...(AUTOMATIONS_ENABLED ? [{ key: "automacoes", label: "Automacoes" }] : []),
   { key: "integracoes", label: "Integracoes" },
   { key: "plano", label: "Plano" },
 ];

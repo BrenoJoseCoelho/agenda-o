@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
 import { requireBusiness } from "@/lib/access";
 import { getAutomationCandidates } from "@/lib/automations";
+import { AUTOMATIONS_ENABLED } from "@/lib/features";
 import {
   updateAutomationsAction,
   runAutomationsNowAction,
@@ -21,6 +23,7 @@ export default async function AutomacoesPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
+  if (!AUTOMATIONS_ENABLED) notFound(); // fora do lançamento por enquanto
   const { businessId: routeParam } = await params;
   const { business } = await requireBusiness(routeParam);
   const businessId = business.id;
