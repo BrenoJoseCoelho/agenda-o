@@ -94,6 +94,29 @@ export async function removeServiceAction(businessId: string, serviceId: string)
   revalidatePath(`/negocios/${business.slug}/cerebro`);
 }
 
+// Salva varios servicos de uma vez (usado pelo onboarding por foto, apos o
+// dono revisar a lista extraida da imagem).
+export async function bulkAddServicesAction(
+  businessId: string,
+  services: { name: string; priceCents: number; durationMinutes: number }[]
+) {
+  const { business } = await requireBusiness(businessId);
+  const clean = services
+    .filter((s) => s.name?.trim() && Number.isFinite(s.priceCents) && s.priceCents >= 0)
+    .slice(0, 100)
+    .map((s) => ({
+      businessId: business.id,
+      name: s.name.trim().slice(0, 120),
+      priceCents: Math.round(s.priceCents),
+      durationMinutes: Number.isFinite(s.durationMinutes) && s.durationMinutes > 0
+        ? Math.round(s.durationMinutes)
+        : 30,
+    }));
+  if (clean.length === 0) return;
+  await prisma.service.createMany({ data: clean });
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
+}
+
 export async function updateAutomationsAction(businessId: string, formData: FormData) {
   const { business } = await requireBusiness(businessId);
   const on = (name: string) => formData.get(name) === "on";
@@ -147,4 +170,18 @@ export async function updateWhatsappAction(businessId: string, formData: FormDat
   });
 
   revalidatePath(`/negocios/${business.slug}/cerebro`);
+}
+
+export async function updateInstagramAction(businessId: string, formData: FormData) {
+  const { business } = await requireBusiness(businessId);
+
+  await prisma.business.update({
+    where: { id: business.id },
+    data: {
+      instagramAccountId: String(formData.get("instagramAccountId") || "").trim() || null,
+      instagramAccessToken: String(formData.get("instagramAccessToken") || "").trim() || null,
+    },
+  });
+
+  revalidatePath(`/negocios/${business.slug}/integracoes`);
 }

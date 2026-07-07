@@ -52,6 +52,12 @@ enum CalendarProvider {
   OUTLOOK
 }
 
+// Canal por onde a conversa chegou. Mesmo cérebro atende todos.
+enum Channel {
+  WHATSAPP
+  INSTAGRAM
+}
+
 enum CalendarConnectionStatus {
   ATIVA
   EXPIRADA
@@ -138,6 +144,10 @@ model Business {
   whatsappVerifyToken   String?
   whatsappApiKey        String? // 360dialog D360-API-KEY
   whatsappChannelId     String? // 360dialog channel id
+
+  // Instagram DM (Meta Graph API). Inbound routing usa instagramAccountId.
+  instagramAccountId   String? // IG business account / page-scoped id
+  instagramAccessToken String? // page access token para responder DMs
 
   billingStatus BillingStatus @default(TRIAL)
   plan          Plan          @default(PROFISSIONAL)
@@ -228,6 +238,7 @@ model Conversation {
   contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   status        ConversationStatus @default(NOVA)
+  channel       Channel            @default(WHATSAPP)
   lastMessageAt DateTime           @default(now())
   winBackSentAt DateTime?          // quando a IA reengajou este contato que sumiu
   createdAt     DateTime           @default(now())

@@ -2,6 +2,7 @@ import { requireBusiness } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { PROVIDER_META } from "@/lib/calendar";
 import { isWhatsappConnected } from "@/lib/whatsapp";
+import { isInstagramConnected } from "@/lib/instagram";
 import { d360Configured } from "@/lib/whatsapp/onboarding";
 import {
   disconnectCalendarAction,
@@ -9,7 +10,7 @@ import {
   revokeIcsTokenAction,
   disconnectWhatsappAction,
 } from "@/app/actions/integration-actions";
-import { updateWhatsappAction } from "@/app/actions/business-actions";
+import { updateWhatsappAction, updateInstagramAction } from "@/app/actions/business-actions";
 import CopyField from "./CopyField";
 
 const OK_MESSAGES: Record<string, string> = {
@@ -51,9 +52,12 @@ export default async function IntegracoesPage({
   const revokeIcs = revokeIcsTokenAction.bind(null, businessId);
   const updateWhatsapp = updateWhatsappAction.bind(null, businessId);
   const disconnectWhatsapp = disconnectWhatsappAction.bind(null, businessId);
+  const updateInstagram = updateInstagramAction.bind(null, businessId);
 
   const whatsappOn = isWhatsappConnected(business);
   const whatsappQuickAvailable = d360Configured();
+  const instagramOn = isInstagramConnected(business);
+  const igWebhookUrl = `${baseUrl}/api/instagram/webhook`;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -238,6 +242,50 @@ export default async function IntegracoesPage({
             </button>
           </form>
         )}
+      </div>
+
+      {/* Instagram Direct */}
+      <div className="glass rounded-2xl p-5 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-sm font-semibold text-1">Instagram Direct</div>
+            <div className="text-xs text-2 mt-0.5">
+              A mesma IA responde os DMs do seu Instagram, nao so o WhatsApp.
+            </div>
+          </div>
+          <span
+            className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${
+              instagramOn
+                ? "bg-emerald-400/10 text-emerald-500 border border-emerald-400/25"
+                : "bg-soft text-3 bd border"
+            }`}
+          >
+            {instagramOn ? "Conectado" : "Desconectado"}
+          </span>
+        </div>
+
+        <form action={updateInstagram} className="space-y-3 border-t bd pt-4">
+          <SmallField
+            label="ID da conta do Instagram"
+            name="instagramAccountId"
+            defaultValue={business.instagramAccountId ?? ""}
+          />
+          <SmallField
+            label="Token de acesso (page access token)"
+            name="instagramAccessToken"
+            defaultValue={business.instagramAccessToken ?? ""}
+          />
+          <div className="text-xs text-3">
+            No painel da Meta, configure o webhook de mensagens do Instagram para:
+            <br />
+            <code className="text-emerald-500 break-all">{igWebhookUrl}</code>
+            <br />
+            usando o mesmo verify token do WhatsApp.
+          </div>
+          <button className="btn-primary" type="submit">
+            Salvar
+          </button>
+        </form>
       </div>
 
       {/* Outlook (planned) */}
