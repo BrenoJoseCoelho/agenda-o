@@ -3,8 +3,35 @@
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/auth";
+import {
+  loginKeys,
+  loginRetryAfter,
+  recordLoginFailure,
+  clearLoginAttempts,
+} from "@/lib/rate-limit";
+
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  return (
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-real-ip") ||
+    "desconhecido"
+  );
+}
+
+// A successful signIn throws a NEXT_REDIRECT; distinguish it from a real error.
+function isRedirect(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
 
 function slugify(name: string) {
   const stripped = name
@@ -78,10 +105,25 @@ export async function loginAction(formData: FormData) {
     .toLowerCase();
   const password = String(formData.get("password") || "");
 
+  const keys = loginKeys(email, await clientIp());
+
+  // Bloqueia forca bruta: se email ou IP estao travados, nem tenta autenticar.
+  const retryAfter = await loginRetryAfter(keys);
+  if (retryAfter !== null) {
+    const minutes = Math.ceil(retryAfter / 60);
+    redirect(`/login?error=Muitas tentativas. Tente de novo em ${minutes} min.`);
+  }
+
   try {
     await signIn("credentials", { email, password, redirectTo: "/" });
   } catch (error) {
+    // Sucesso: signIn lanca um redirect. Limpa os contadores e deixa seguir.
+    if (isRedirect(error)) {
+      await clearLoginAttempts(keys);
+      throw error;
+    }
     if (error instanceof AuthError) {
+      await recordLoginFailure(keys);
       redirect("/login?error=Email ou senha invalidos");
     }
     throw error;

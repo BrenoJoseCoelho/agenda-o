@@ -97,6 +97,15 @@ model User {
   createdAt      DateTime     @default(now())
 }
 
+// Brute-force protection for login. One row per throttled key (an IP or an
+// email). Rows reset once the sliding window passes; see src/lib/rate-limit.ts.
+model LoginAttempt {
+  key         String    @id // "ip:<addr>" ou "email:<addr>"
+  count       Int       @default(0)
+  firstAt     DateTime  @default(now())
+  lockedUntil DateTime?
+}
+
 // One WhatsApp-attended establishment (salon, clinic, etc).
 // Under a DONO org there is exactly one Business; under an AGENCIA org there are many (its clients).
 model Business {
