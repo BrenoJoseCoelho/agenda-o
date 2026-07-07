@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireBusiness, requireSession } from "@/lib/access";
 import { runAutomationsForBusiness } from "@/lib/automations";
+import { businessTypeForSegment } from "@/lib/segments";
 
 function slugify(name: string) {
   const stripped = name
@@ -18,6 +19,8 @@ export async function createBusinessAction(formData: FormData) {
   const session = await requireSession();
   const name = String(formData.get("name") || "").trim();
   if (!name) redirect("/organizacao?error=Informe o nome do cliente");
+  const segment = String(formData.get("segment") || "").trim() || null;
+  const businessType = businessTypeForSegment(segment);
 
   const base = slugify(name) || "negocio";
   let slug = base;
@@ -28,11 +31,16 @@ export async function createBusinessAction(formData: FormData) {
   }
 
   const business = await prisma.business.create({
-    data: { organizationId: session.user.organizationId, name, slug },
+    data: { organizationId: session.user.organizationId, name, slug, segment, businessType },
   });
 
   revalidatePath("/organizacao");
-  redirect(`/negocios/${business.slug}/cerebro`);
+  // Hospedagem comeca cadastrando as unidades; servico comeca no Cerebro.
+  redirect(
+    businessType === "HOSPEDAGEM"
+      ? `/negocios/${business.slug}/hospedagem`
+      : `/negocios/${business.slug}/cerebro`
+  );
 }
 
 export async function updateBrainAction(businessId: string, formData: FormData) {

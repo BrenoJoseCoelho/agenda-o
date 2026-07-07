@@ -173,6 +173,9 @@ model Business {
   // SERVICO = agendamento de horario (barbearia, salao). HOSPEDAGEM = aluguel
   // por temporada (cabanas, chales) com reserva por periodo e sync do Airbnb.
   businessType BusinessType @default(SERVICO)
+  // Segmento escolhido no cadastro (BARBEARIA, SALAO, HOSPEDAGEM, ...), usado
+  // para recomendar o modo certo e, no futuro, defaults por nicho.
+  segment String?
 
   // Stripe (cobranca recorrente). Preenchidos apos o primeiro checkout.
   stripeCustomerId     String? @unique

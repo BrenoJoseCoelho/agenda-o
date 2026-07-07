@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { registerAction } from "@/app/actions/auth-actions";
+import { SEGMENTS } from "@/lib/segments";
 
 export default function RegisterForm({ error }: { error?: string }) {
   const [orgType, setOrgType] = useState<"DONO" | "AGENCIA">("DONO");
@@ -54,7 +55,7 @@ export default function RegisterForm({ error }: { error?: string }) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-body">Senha</label>
-        <input name="password" type="password" required minLength={6} className="input-app" />
+        <input name="password" type="password" required minLength={8} className="input-app" />
       </div>
 
       <div className="space-y-1.5">
@@ -70,12 +71,29 @@ export default function RegisterForm({ error }: { error?: string }) {
       </div>
 
       {orgType === "DONO" && (
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-body">
-            Nome do estabelecimento (aparece no WhatsApp)
-          </label>
-          <input name="businessName" required className="input-app" placeholder="Barbearia do Ze" />
-        </div>
+        <>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-body">Tipo do negocio</label>
+            <select name="segment" required defaultValue="BARBEARIA" className="input-app">
+              {SEGMENTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label} — {s.hint}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-3">
+              Definimos o modo certo pra voce: hospedagem reserva por diaria; o resto agenda por
+              horario.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-body">
+              Nome do estabelecimento (aparece no WhatsApp)
+            </label>
+            <input name="businessName" required className="input-app" placeholder="Barbearia do Ze" />
+          </div>
+        </>
       )}
 
       {orgType === "AGENCIA" && (

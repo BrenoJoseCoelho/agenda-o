@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/auth";
+import { businessTypeForSegment } from "@/lib/segments";
 import {
   loginKeys,
   loginRetryAfter,
@@ -50,6 +51,8 @@ export async function registerAction(formData: FormData) {
   const orgType = String(formData.get("orgType") || "DONO") as "DONO" | "AGENCIA";
   const orgName = String(formData.get("orgName") || "").trim();
   const businessName = String(formData.get("businessName") || "").trim();
+  const segment = String(formData.get("segment") || "").trim() || null;
+  const businessType = businessTypeForSegment(segment);
 
   if (!name || !email || !password || !orgName) {
     redirect("/registrar?error=Preencha todos os campos");
@@ -68,6 +71,7 @@ export async function registerAction(formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  let businessSlug: string | null = null;
   await prisma.$transaction(async (tx) => {
     const org = await tx.organization.create({
       data: { name: orgName, type: orgType },
@@ -84,13 +88,20 @@ export async function registerAction(formData: FormData) {
         slug = `${base}-${attempt}`;
       }
       await tx.business.create({
-        data: { organizationId: org.id, name: businessName, slug },
+        data: { organizationId: org.id, name: businessName, slug, segment, businessType },
       });
+      businessSlug = slug;
     }
   });
 
+  // Hospedagem ja cai na aba de cadastrar as unidades; o resto vai pro painel.
+  const redirectTo =
+    businessType === "HOSPEDAGEM" && businessSlug
+      ? `/negocios/${businessSlug}/hospedagem`
+      : "/";
+
   try {
-    await signIn("credentials", { email, password, redirectTo: "/" });
+    await signIn("credentials", { email, password, redirectTo });
   } catch (error) {
     if (error instanceof AuthError) {
       redirect("/login?error=Conta criada, mas o login falhou. Tente entrar.");

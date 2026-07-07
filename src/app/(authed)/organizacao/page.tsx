@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { createBusinessAction } from "@/app/actions/business-actions";
+import { SEGMENTS } from "@/lib/segments";
 
 const BILLING_LABEL: Record<string, string> = {
   TRIAL: "Teste gratis",
@@ -59,8 +60,8 @@ export default async function OrganizacaoPage({
       )}
 
       {isAgency && (
-        <form action={createBusinessAction} className="glass rounded-2xl p-4 flex items-end gap-3">
-          <div className="flex-1 space-y-1.5">
+        <form action={createBusinessAction} className="glass rounded-2xl p-4 flex items-end gap-3 flex-wrap">
+          <div className="flex-1 min-w-[180px] space-y-1.5">
             <label className="text-sm font-medium text-body">Novo cliente</label>
             <input
               name="name"
@@ -68,6 +69,16 @@ export default async function OrganizacaoPage({
               placeholder="Nome do estabelecimento do cliente"
               className="input-app"
             />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-body">Tipo</label>
+            <select name="segment" defaultValue="BARBEARIA" className="input-app">
+              {SEGMENTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
           </div>
           <button type="submit" className="btn-primary">
             Adicionar cliente
