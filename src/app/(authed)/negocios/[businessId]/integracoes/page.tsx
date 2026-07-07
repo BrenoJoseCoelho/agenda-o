@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PROVIDER_META } from "@/lib/calendar";
 import { isWhatsappConnected } from "@/lib/whatsapp";
 import { isInstagramConnected } from "@/lib/instagram";
+import { INSTAGRAM_ENABLED } from "@/lib/features";
 import { d360Configured } from "@/lib/whatsapp/onboarding";
 import {
   disconnectCalendarAction,
@@ -245,6 +246,7 @@ export default async function IntegracoesPage({
       </div>
 
       {/* Instagram Direct */}
+      {INSTAGRAM_ENABLED && (
       <div className="glass rounded-2xl p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -287,6 +289,7 @@ export default async function IntegracoesPage({
           </button>
         </form>
       </div>
+      )}
 
       {/* Outlook (planned) */}
       <div className="glass rounded-2xl p-5 opacity-60">

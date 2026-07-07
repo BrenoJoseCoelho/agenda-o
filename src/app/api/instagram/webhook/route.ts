@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { processIncomingMessage } from "@/lib/conversation-engine";
 import { sendInstagramMessage } from "@/lib/instagram";
+import { INSTAGRAM_ENABLED } from "@/lib/features";
 
 // Same Meta app as WhatsApp, so it reuses WHATSAPP_APP_SECRET for the HMAC and
 // WHATSAPP_VERIFY_TOKEN for the subscription handshake.
@@ -41,6 +42,9 @@ type IgPayload = {
 };
 
 export async function POST(request: Request) {
+  // Instagram fora do lançamento: responde OK mas não processa até religar o flag.
+  if (!INSTAGRAM_ENABLED) return NextResponse.json({ ok: true, skipped: "instagram_disabled" });
+
   const rawBody = await request.text();
   if (!verifiedSignature(rawBody, request.headers.get("x-hub-signature-256"))) {
     return new NextResponse("Invalid signature", { status: 401 });
