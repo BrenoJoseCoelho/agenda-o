@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { isSuperAdmin } from "@/lib/access";
 import { signOutAction } from "@/app/actions/sign-out-action";
 import ThemeToggle from "@/app/ThemeToggle";
 
@@ -30,6 +32,14 @@ export default async function AuthedLayout({
             </span>
           </div>
           <div className="flex items-center gap-3">
+            {isSuperAdmin(session.user.email) && (
+              <Link
+                href="/admin"
+                className="text-xs uppercase tracking-wider text-emerald-500 hover:text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 rounded-full transition-colors"
+              >
+                Master
+              </Link>
+            )}
             <ThemeToggle />
             <form action={signOutAction}>
               <button className="text-sm text-2 hover:text-1 transition-colors" type="submit">
