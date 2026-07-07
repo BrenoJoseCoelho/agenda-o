@@ -1,5 +1,7 @@
 import { requireBusiness } from "@/lib/access";
 import { updatePlanAction } from "@/app/actions/business-actions";
+import { createCheckoutAction, createPortalAction } from "@/app/actions/stripe-actions";
+import { stripeConfigured } from "@/lib/stripe";
 
 type PlanKey = "ESSENCIAL" | "PROFISSIONAL" | "ILIMITADO";
 
@@ -41,15 +43,32 @@ const PLANS: {
   },
 ];
 
+const OK_MESSAGES: Record<string, string> = {
+  assinatura_ativada: "Assinatura ativada! 🎉 Sua conta esta ativa.",
+};
+const ERROR_MESSAGES: Record<string, string> = {
+  checkout_cancelado: "Checkout cancelado. Nenhuma cobranca foi feita.",
+  pagamento_indisponivel: "Pagamento ainda nao esta configurado no servidor.",
+  sem_assinatura: "Voce ainda nao tem uma assinatura ativa.",
+};
+
 export default async function PlanoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ businessId: string }>;
+  searchParams: Promise<{ ok?: string; error?: string }>;
 }) {
   const { businessId: routeParam } = await params;
+  const { ok, error } = await searchParams;
   const { business } = await requireBusiness(routeParam);
   const businessId = business.id;
   const current = business.plan as PlanKey;
+
+  const billingOn = stripeConfigured();
+  const hasSubscription = Boolean(business.stripeSubscriptionId);
+  const isActive = business.billingStatus === "ATIVO";
+  const openPortal = createPortalAction.bind(null, businessId);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -60,14 +79,34 @@ export default async function PlanoPage({
           <span className="text-emerald-500 font-medium">
             {PLANS.find((p) => p.key === current)?.label}
           </span>
-          .
+          {isActive && billingOn ? " (assinatura ativa)" : ""}.
         </p>
       </div>
+
+      {ok && OK_MESSAGES[ok] && (
+        <div className="text-sm rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-500 px-4 py-3">
+          {OK_MESSAGES[ok]}
+        </div>
+      )}
+      {error && ERROR_MESSAGES[error] && (
+        <div className="text-sm rounded-xl border border-rose-400/25 bg-rose-400/10 text-rose-500 px-4 py-3">
+          {ERROR_MESSAGES[error]}
+        </div>
+      )}
+
+      {billingOn && hasSubscription && (
+        <form action={openPortal}>
+          <button type="submit" className="btn-ghost text-sm">
+            Gerenciar assinatura (cartao, faturas, cancelar)
+          </button>
+        </form>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
           const isCurrent = plan.key === current;
-          const changeTo = updatePlanAction.bind(null, businessId, plan.key);
+          const changeManual = updatePlanAction.bind(null, businessId, plan.key);
+          const subscribe = createCheckoutAction.bind(null, businessId, plan.key);
           return (
             <div
               key={plan.key}
@@ -100,12 +139,22 @@ export default async function PlanoPage({
               </ul>
 
               <div className="mt-5">
-                {isCurrent ? (
+                {isCurrent && isActive && billingOn ? (
+                  <div className="text-center text-xs text-emerald-500 font-medium border border-emerald-400/25 bg-emerald-400/5 rounded-lg py-2">
+                    Plano atual
+                  </div>
+                ) : billingOn ? (
+                  <form action={subscribe}>
+                    <button type="submit" className={plan.featured ? "btn-primary w-full" : "btn-ghost w-full"}>
+                      {hasSubscription ? `Mudar para ${plan.label}` : `Assinar ${plan.label}`}
+                    </button>
+                  </form>
+                ) : isCurrent ? (
                   <div className="text-center text-xs text-emerald-500 font-medium border border-emerald-400/25 bg-emerald-400/5 rounded-lg py-2">
                     Plano atual
                   </div>
                 ) : (
-                  <form action={changeTo}>
+                  <form action={changeManual}>
                     <button type="submit" className={plan.featured ? "btn-primary w-full" : "btn-ghost w-full"}>
                       Mudar para {plan.label}
                     </button>
@@ -118,8 +167,9 @@ export default async function PlanoPage({
       </div>
 
       <p className="text-xs text-3">
-        A troca de plano ja muda a IA na hora. A cobranca automatica (Stripe) entra em breve —
-        por enquanto a mudanca e manual.
+        {billingOn
+          ? "Pagamento seguro pela Stripe. A troca de plano ajusta a cobranca e a IA automaticamente."
+          : "Modo teste: a troca de plano muda a IA na hora, sem cobranca. A cobranca automatica (Stripe) ativa quando as chaves forem configuradas."}
       </p>
     </div>
   );

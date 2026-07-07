@@ -152,6 +152,10 @@ model Business {
   billingStatus BillingStatus @default(TRIAL)
   plan          Plan          @default(PROFISSIONAL)
 
+  // Stripe (cobranca recorrente). Preenchidos apos o primeiro checkout.
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String?
+
   // Automacoes proativas — o dono liga/desliga cada uma no Cerebro.
   winBackEnabled        Boolean @default(true)  // recupera cliente que sumiu
   winBackDays           Int     @default(3)     // dias de silencio para reengajar

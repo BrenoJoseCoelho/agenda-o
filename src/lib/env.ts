@@ -28,6 +28,7 @@ export const integrations = {
   d360: () =>
     Boolean(process.env.D360_PARTNER_ID && process.env.D360_PARTNER_API_TOKEN),
   whatsappSignature: () => Boolean(process.env.WHATSAPP_APP_SECRET),
+  stripe: () => Boolean(process.env.STRIPE_SECRET_KEY),
 };
 
 // Fails fast at startup if a hard dependency is missing. Call from a server
