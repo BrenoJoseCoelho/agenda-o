@@ -12,6 +12,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/whatsapp/webhook") ||
     pathname.startsWith("/api/instagram/webhook") ||
     pathname.startsWith("/api/stripe/webhook") ||
+    pathname.startsWith("/api/hospedagem") ||
     pathname.startsWith("/api/calendar") ||
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/api/health");
@@ -32,6 +33,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/auth|api/whatsapp/webhook|api/instagram/webhook|api/stripe/webhook|api/calendar|api/cron|api/health).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/auth|api/whatsapp/webhook|api/instagram/webhook|api/stripe/webhook|api/hospedagem|api/calendar|api/cron|api/health).*)",
   ],
 };

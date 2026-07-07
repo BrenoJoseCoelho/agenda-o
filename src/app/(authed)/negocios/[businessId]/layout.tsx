@@ -29,7 +29,7 @@ export default async function BusinessLayout({
               )}
             </div>
           </div>
-          <BusinessNav businessId={business.slug} />
+          <BusinessNav businessId={business.slug} lodging={business.businessType === "HOSPEDAGEM"} />
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>

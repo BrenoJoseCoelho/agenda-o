@@ -58,6 +58,24 @@ enum Channel {
   INSTAGRAM
 }
 
+enum BusinessType {
+  SERVICO
+  HOSPEDAGEM
+}
+
+enum ReservationStatus {
+  CONFIRMADA
+  CANCELADA
+  BLOQUEADA // bloqueio vindo de canal externo (Airbnb/Booking) ou manutencao
+}
+
+enum ReservationSource {
+  DIRETO // reserva feita aqui (WhatsApp/IA)
+  AIRBNB
+  BOOKING
+  OUTRO
+}
+
 enum CalendarConnectionStatus {
   ATIVA
   EXPIRADA
@@ -152,6 +170,10 @@ model Business {
   billingStatus BillingStatus @default(TRIAL)
   plan          Plan          @default(PROFISSIONAL)
 
+  // SERVICO = agendamento de horario (barbearia, salao). HOSPEDAGEM = aluguel
+  // por temporada (cabanas, chales) com reserva por periodo e sync do Airbnb.
+  businessType BusinessType @default(SERVICO)
+
   // Stripe (cobranca recorrente). Preenchidos apos o primeiro checkout.
   stripeCustomerId     String? @unique
   stripeSubscriptionId String?
@@ -180,6 +202,7 @@ model Business {
   conversations       Conversation[]
   appointments        Appointment[]
   calendarConnections CalendarConnection[]
+  rentalUnits         RentalUnit[]
 }
 
 // An OAuth connection to an external calendar (Google, Outlook, ...).
@@ -230,6 +253,7 @@ model Contact {
 
   conversations Conversation[]
   appointments  Appointment[]
+  reservations  Reservation[]
 
   @@unique([businessId, phone])
 }
@@ -281,4 +305,56 @@ model Appointment {
   // update/cancel it later.
   externalProvider CalendarProvider?
   externalEventId  String?
+}
+
+// Uma unidade alugavel (cabana, chale, quarto). Cada uma tem sua propria agenda
+// e seu proprio feed iCal para sincronizar com Airbnb/Booking.
+model RentalUnit {
+  id                String   @id @default(cuid())
+  businessId        String
+  business          Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name              String
+  nightlyPriceCents Int      @default(0) // diaria
+  capacity          Int      @default(2) // hospedes
+  description       String?
+  active            Boolean  @default(true)
+  icsToken          String   @unique @default(cuid()) // token do feed de export
+
+  createdAt    DateTime @default(now())
+  reservations Reservation[]
+  feeds        UnitCalendarFeed[]
+}
+
+// Uma estadia (check-in -> check-out). Pode ser direta (feita aqui) ou um
+// bloqueio importado do Airbnb/Booking (para nao dobrar reserva).
+model Reservation {
+  id        String     @id @default(cuid())
+  unitId    String
+  unit      RentalUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  contactId String?
+  contact   Contact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  guestName String?
+  checkIn   DateTime // meia-noite do dia de entrada
+  checkOut  DateTime // meia-noite do dia de saida (dia de saida fica livre)
+  status    ReservationStatus @default(CONFIRMADA)
+  source    ReservationSource @default(DIRETO)
+  externalUid String?          // UID do VEVENT importado, para dedup no sync
+  createdAt DateTime @default(now())
+
+  @@index([unitId, checkIn, checkOut])
+}
+
+// Um calendario externo (Airbnb, Booking) que exporta iCal. Importamos para
+// bloquear as datas ja reservadas la.
+model UnitCalendarFeed {
+  id         String     @id @default(cuid())
+  unitId     String
+  unit       RentalUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  label      String            // "Airbnb", "Booking", ...
+  url        String            // URL iCal exportada pelo canal
+  lastSyncAt DateTime?
+  createdAt  DateTime @default(now())
 }

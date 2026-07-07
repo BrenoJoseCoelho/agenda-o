@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateAiReply } from "@/lib/ai";
 import { checkAvailability, pushEventToCalendar } from "@/lib/calendar";
+import { createDirectReservation } from "@/lib/lodging";
 import type { Business } from "@/generated/prisma/client";
 
 export async function processIncomingMessage(params: {
@@ -23,6 +24,15 @@ export async function processIncomingMessage(params: {
     where: { businessId: business.id, active: true },
     orderBy: { createdAt: "asc" },
   });
+
+  // Modo hospedagem: a IA trabalha com unidades (cabanas) em vez de servicos.
+  const isLodging = business.businessType === "HOSPEDAGEM";
+  const units = isLodging
+    ? await prisma.rentalUnit.findMany({
+        where: { businessId: business.id, active: true },
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
 
   const history = [...conversation.messages, customerMessage].map((m) => ({
     sender: m.sender,
@@ -50,7 +60,7 @@ export async function processIncomingMessage(params: {
     };
   }
 
-  const result = await generateAiReply({ business, services, history, contact: contactContext });
+  const result = await generateAiReply({ business, services, history, contact: contactContext, units });
 
   // Persist any new preference the AI decided to remember about this client.
   if (result.memory) {
@@ -98,6 +108,23 @@ export async function processIncomingMessage(params: {
         },
       });
       status = "AGENDOU";
+    }
+  } else if (result.reservation) {
+    // Hospedagem: cria a reserva se as datas estiverem livres (checa Airbnb + diretas).
+    const { unitId, checkIn, checkOut } = result.reservation;
+    const unit = units.find((u) => u.id === unitId);
+    const created = await createDirectReservation({
+      unitId,
+      checkIn,
+      checkOut,
+      contactId: conversation.contactId,
+      guestName: conversation.contact.name,
+    });
+    if (created.ok) {
+      status = "AGENDOU";
+    } else {
+      reply = `Ihh, ${unit ? `a ${unit.name}` : "essa unidade"} ja esta reservada nessas datas. Quer ver outras datas ou outra unidade?`;
+      if (conversation.status === "NOVA") status = "EM_ATENDIMENTO";
     }
   } else if (conversation.status === "NOVA") {
     status = "EM_ATENDIMENTO";

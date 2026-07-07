@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/automations",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/ical-sync",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

@@ -6,6 +6,7 @@ import {
   addServiceAction,
   removeServiceAction,
 } from "@/app/actions/business-actions";
+import { setBusinessTypeAction } from "@/app/actions/lodging-actions";
 import PersonaPresets from "./PersonaPresets";
 import ImportServices from "./ImportServices";
 
@@ -28,6 +29,9 @@ export default async function CerebroPage({
 
   const updateAction = updateBrainAction.bind(null, businessId);
   const addService = addServiceAction.bind(null, businessId);
+  const setServico = setBusinessTypeAction.bind(null, businessId, "SERVICO");
+  const setHospedagem = setBusinessTypeAction.bind(null, businessId, "HOSPEDAGEM");
+  const isLodging = business.businessType === "HOSPEDAGEM";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -37,6 +41,36 @@ export default async function CerebroPage({
           Tudo que a IA sabe sobre o seu negocio. Mude aqui e ela ja responde diferente na aba
           Conversas.
         </p>
+      </div>
+
+      <div className="glass rounded-2xl p-5">
+        <div className="text-sm font-semibold text-1 mb-1">Tipo de negocio</div>
+        <p className="text-xs text-3 mb-3">
+          Servicos = agendamento por horario. Hospedagem = aluguel por temporada (reserva por
+          periodo, com sincronizacao do Airbnb).
+        </p>
+        <div className="flex gap-2">
+          <form action={setServico}>
+            <button
+              type="submit"
+              className={`text-sm px-4 py-1.5 rounded-full border transition-colors ${
+                !isLodging ? "bg-emerald-400/15 text-emerald-500 border-emerald-400/30" : "bd text-2 hover-surface"
+              }`}
+            >
+              Servicos
+            </button>
+          </form>
+          <form action={setHospedagem}>
+            <button
+              type="submit"
+              className={`text-sm px-4 py-1.5 rounded-full border transition-colors ${
+                isLodging ? "bg-emerald-400/15 text-emerald-500 border-emerald-400/30" : "bd text-2 hover-surface"
+              }`}
+            >
+              Hospedagem
+            </button>
+          </form>
+        </div>
       </div>
 
       <form action={updateAction} className="glass rounded-2xl p-5 space-y-4">

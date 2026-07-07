@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Business, Service } from "@/generated/prisma/client";
+import type { Business, Service, RentalUnit } from "@/generated/prisma/client";
+import { parseDateOnly } from "@/lib/ical";
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -13,6 +14,7 @@ export type ContactContext = { name: string; memory?: string | null; pastSummary
 export type AiResult = {
   reply: string;
   appointment?: { serviceId: string; scheduledAt: Date };
+  reservation?: { unitId: string; checkIn: Date; checkOut: Date }; // hospedagem
   memory?: string; // uma preferencia que a IA quer guardar sobre o cliente
 };
 
@@ -32,11 +34,26 @@ function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function buildSystemPrompt(business: Business, services: Service[], contact?: ContactContext) {
+function buildSystemPrompt(
+  business: Business,
+  services: Service[],
+  contact?: ContactContext,
+  units: RentalUnit[] = []
+) {
+  const isLodging = business.businessType === "HOSPEDAGEM";
   const serviceLines =
     services
       .map((s) => `- ${s.name}: ${formatPrice(s.priceCents)} (${s.durationMinutes} min)`)
       .join("\n") || "Nenhum servico cadastrado ainda.";
+  const unitLines =
+    units
+      .map((u) => `- ${u.name}: ${formatPrice(u.nightlyPriceCents)}/noite (ate ${u.capacity} hospedes)`)
+      .join("\n") || "Nenhuma unidade cadastrada ainda.";
+  const offeringHeader = isLodging ? "Unidades e diarias:" : "Servicos e precos:";
+  const offeringLines = isLodging ? unitLines : serviceLines;
+  const objective = isLodging
+    ? 'Tirar a duvida do hospede e conduzi-lo ate reservar uma unidade. Quando ele deixar claro a unidade, o check-in e o check-out, chame a ferramenta "reservar_estadia" com as datas em formato YYYY-MM-DD e confirme com simpatia. Converta datas relativas ("proximo fim de semana", "do dia 10 ao 12") para datas reais usando a data de hoje.'
+    : 'Tirar a duvida do cliente e conduzi-lo com naturalidade ate marcar um dos servicos. Quando ele deixar claro o servico, o dia e o horario, chame a ferramenta "agendar_horario" com os dados exatos e confirme com simpatia depois.';
 
   const contactBlock =
     contact && (contact.memory || contact.pastSummary)
@@ -92,8 +109,8 @@ Voce NUNCA diz que e inteligencia artificial, robo, bot, assistente virtual, sis
 
 # O QUE VOCE SABE
 Horario de funcionamento: ${business.openingHours}
-Servicos e precos:
-${serviceLines}
+${offeringHeader}
+${offeringLines}
 
 Regras do negocio (siga a risca): ${business.rules}
 ${contactBlock}${
@@ -106,7 +123,7 @@ ${contactBlock}${
 Nunca invente servico, preco, horario ou promocao que nao esteja na lista acima. Se o cliente pedir algo que voce nao tem certeza, diga que vai confirmar com a equipe e pede um instantinho — nunca chute.
 
 # SEU OBJETIVO
-Tirar a duvida do cliente e conduzi-lo com naturalidade ate marcar um dos servicos. Quando ele deixar claro o servico, o dia e o horario, chame a ferramenta "agendar_horario" com os dados exatos e confirme com simpatia depois.
+${objective}
 
 # AUDIO
 Se a mensagem veio de um audio transcrito e ficou ambigua, confirme rapidinho o que voce entendeu antes de agir ("so confirmando, voce quer corte e barba amanha de manha, e isso?").
@@ -147,6 +164,29 @@ const memoryTool: Anthropic.Tool = {
   },
 };
 
+const reservationTool: Anthropic.Tool = {
+  name: "reservar_estadia",
+  description:
+    "Reserva uma unidade (cabana/chale/quarto) para um periodo, depois que o hospede escolheu a unidade e as datas de entrada e saida.",
+  input_schema: {
+    type: "object",
+    properties: {
+      unidade: { type: "string", description: "Nome exato da unidade, igual a lista fornecida." },
+      check_in: { type: "string", description: "Data de entrada em YYYY-MM-DD." },
+      check_out: { type: "string", description: "Data de saida em YYYY-MM-DD." },
+    },
+    required: ["unidade", "check_in", "check_out"],
+  },
+};
+
+function matchUnit(units: RentalUnit[], name: string) {
+  const lower = name.toLowerCase().trim();
+  return (
+    units.find((u) => u.name.toLowerCase() === lower) ??
+    units.find((u) => u.name.toLowerCase().includes(lower) || lower.includes(u.name.toLowerCase()))
+  );
+}
+
 function matchService(services: Service[], name: string) {
   const lower = name.toLowerCase().trim();
   return (
@@ -160,17 +200,20 @@ export async function generateAiReply(params: {
   services: Service[];
   history: HistoryItem[];
   contact?: ContactContext;
+  units?: RentalUnit[];
 }): Promise<AiResult> {
-  const { business, services, history, contact } = params;
+  const { business, services, history, contact, units = [] } = params;
 
   if (!anthropic) {
     return heuristicReply(business, services, history);
   }
 
+  const isLodging = business.businessType === "HOSPEDAGEM";
   const memoryOn = business.clientMemoryEnabled;
-  const system = buildSystemPrompt(business, services, memoryOn ? contact : undefined);
+  const system = buildSystemPrompt(business, services, memoryOn ? contact : undefined, units);
   const model = modelForPlan(business.plan);
-  const tools = memoryOn ? [bookingTool, memoryTool] : [bookingTool];
+  const primaryTool = isLodging ? reservationTool : bookingTool;
+  const tools = memoryOn ? [primaryTool, memoryTool] : [primaryTool];
   const baseMessages: Anthropic.MessageParam[] = history.map((m) => ({
     role: m.sender === "CLIENTE" ? "user" : "assistant",
     content: m.content,
@@ -199,12 +242,28 @@ export async function generateAiReply(params: {
 
   // Execute every tool the model asked for and collect a result for each.
   let appointment: AiResult["appointment"];
+  let reservation: AiResult["reservation"];
   let memory: string | undefined;
   let booked = false;
   const toolResults: Anthropic.ToolResultBlockParam[] = [];
 
   for (const tu of toolUses) {
-    if (tu.name === "agendar_horario") {
+    if (tu.name === "reservar_estadia") {
+      const input = tu.input as { unidade: string; check_in: string; check_out: string };
+      const unit = matchUnit(units, input.unidade);
+      const checkIn = parseDateOnly(input.check_in);
+      const checkOut = parseDateOnly(input.check_out);
+      const valid = Boolean(unit && checkIn && checkOut && checkOut > checkIn);
+      booked = valid;
+      reservation = valid ? { unitId: unit!.id, checkIn: checkIn!, checkOut: checkOut! } : undefined;
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: tu.id,
+        content: valid
+          ? `Pedido de reserva registrado: ${unit!.name}, ${input.check_in} a ${input.check_out}. A disponibilidade sera confirmada.`
+          : "Nao foi possivel: unidade ou datas invalidas. Peça mais detalhes ao hospede.",
+      });
+    } else if (tu.name === "agendar_horario") {
       const input = tu.input as { servico: string; data_hora_iso: string };
       const service = matchService(services, input.servico);
       const scheduledAt = new Date(input.data_hora_iso);
@@ -241,9 +300,13 @@ export async function generateAiReply(params: {
 
   const reply =
     textOf(second) ||
-    (booked ? "Perfeito, agendado! Te espero." : "Pode confirmar de novo o servico e o horario?");
+    (booked
+      ? isLodging
+        ? "Anotado! Ja confirmo sua reserva."
+        : "Perfeito, agendado! Te espero."
+      : "Pode confirmar de novo os detalhes?");
 
-  return { reply, appointment, memory };
+  return { reply, appointment, reservation, memory };
 }
 
 // Several services can share a first word (e.g. "Corte masculino" / "Corte + Barba"), so a
