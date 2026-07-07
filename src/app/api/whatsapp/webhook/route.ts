@@ -1,8 +1,23 @@
+import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { processIncomingMessage } from "@/lib/conversation-engine";
 import { sendWhatsappMessage, downloadWhatsappMedia } from "@/lib/whatsapp";
 import { transcribeAudio, transcriptionConfigured } from "@/lib/transcription";
+
+// Confirms the POST really came from Meta by checking the X-Hub-Signature-256
+// HMAC over the raw body with the App Secret. Only enforced when
+// WHATSAPP_APP_SECRET is set (so the BSP/demo paths keep working).
+function verifiedSignature(rawBody: string, signatureHeader: string | null): boolean {
+  const secret = process.env.WHATSAPP_APP_SECRET;
+  if (!secret) return true; // not configured -> skip (dev / BSP)
+  if (!signatureHeader?.startsWith("sha256=")) return false;
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const received = signatureHeader.slice("sha256=".length);
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(received, "hex");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 // Meta Cloud API webhook verification handshake.
 // Configure this same URL + WHATSAPP_VERIFY_TOKEN in the Meta App dashboard.
@@ -37,7 +52,18 @@ type WhatsappWebhookPayload = {
 };
 
 export async function POST(request: Request) {
-  const payload = (await request.json().catch(() => null)) as WhatsappWebhookPayload | null;
+  const rawBody = await request.text();
+
+  if (!verifiedSignature(rawBody, request.headers.get("x-hub-signature-256"))) {
+    return new NextResponse("Invalid signature", { status: 401 });
+  }
+
+  let payload: WhatsappWebhookPayload | null = null;
+  try {
+    payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
+  } catch {
+    payload = null;
+  }
   if (!payload) return NextResponse.json({ ok: true });
 
   for (const entry of payload.entry ?? []) {
