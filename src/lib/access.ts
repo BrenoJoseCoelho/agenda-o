@@ -8,10 +8,12 @@ export async function requireSession() {
   return session;
 }
 
-export async function requireBusiness(businessId: string) {
+// Accepts either a slug (used in URLs) or a raw id (legacy links / OAuth state),
+// so old bookmarks keep working after we moved routes to slugs.
+export async function requireBusiness(slugOrId: string) {
   const session = await requireSession();
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
+  const business = await prisma.business.findFirst({
+    where: { OR: [{ slug: slugOrId }, { id: slugOrId }] },
   });
   if (!business || business.organizationId !== session.user.organizationId) {
     notFound();

@@ -7,8 +7,9 @@ export default async function ConversasPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  const { business } = await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
 
   const conversations = await prisma.conversation.findMany({
     where: { businessId },

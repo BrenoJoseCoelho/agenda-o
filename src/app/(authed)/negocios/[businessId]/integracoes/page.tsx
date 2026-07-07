@@ -31,9 +31,10 @@ export default async function IntegracoesPage({
   params: Promise<{ businessId: string }>;
   searchParams: Promise<{ ok?: string; error?: string }>;
 }) {
-  const { businessId } = await params;
+  const { businessId: routeParam } = await params;
   const { ok, error } = await searchParams;
-  const { business } = await requireBusiness(businessId);
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
 
   const connections = await prisma.calendarConnection.findMany({
     where: { businessId },

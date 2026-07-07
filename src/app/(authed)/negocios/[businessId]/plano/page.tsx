@@ -46,8 +46,9 @@ export default async function PlanoPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  const { business } = await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
   const current = business.plan as PlanKey;
 
   return (

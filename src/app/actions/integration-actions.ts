@@ -16,20 +16,20 @@ export async function disconnectCalendarAction(businessId: string, provider: Cal
 
   // Best-effort: revoke nothing remotely, just drop our stored tokens.
   await prisma.calendarConnection.delete({ where: { id: connection.id } });
-  revalidatePath(`/negocios/${business.id}/integracoes`);
+  revalidatePath(`/negocios/${business.slug}/integracoes`);
 }
 
 export async function generateIcsTokenAction(businessId: string) {
   const { business } = await requireBusiness(businessId);
   const token = randomBytes(24).toString("hex");
   await prisma.business.update({ where: { id: business.id }, data: { icsToken: token } });
-  revalidatePath(`/negocios/${business.id}/integracoes`);
+  revalidatePath(`/negocios/${business.slug}/integracoes`);
 }
 
 export async function revokeIcsTokenAction(businessId: string) {
   const { business } = await requireBusiness(businessId);
   await prisma.business.update({ where: { id: business.id }, data: { icsToken: null } });
-  revalidatePath(`/negocios/${business.id}/integracoes`);
+  revalidatePath(`/negocios/${business.slug}/integracoes`);
 }
 
 export async function disconnectWhatsappAction(businessId: string) {
@@ -44,5 +44,5 @@ export async function disconnectWhatsappAction(businessId: string) {
       whatsappAccessToken: null,
     },
   });
-  revalidatePath(`/negocios/${business.id}/integracoes`);
+  revalidatePath(`/negocios/${business.slug}/integracoes`);
 }

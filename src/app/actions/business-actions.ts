@@ -32,7 +32,7 @@ export async function createBusinessAction(formData: FormData) {
   });
 
   revalidatePath("/organizacao");
-  redirect(`/negocios/${business.id}/cerebro`);
+  redirect(`/negocios/${business.slug}/cerebro`);
 }
 
 export async function updateBrainAction(businessId: string, formData: FormData) {
@@ -63,7 +63,7 @@ export async function updateBrainAction(businessId: string, formData: FormData) 
     },
   });
 
-  revalidatePath(`/negocios/${business.id}/cerebro`);
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
 }
 
 export async function addServiceAction(businessId: string, formData: FormData) {
@@ -85,13 +85,13 @@ export async function addServiceAction(businessId: string, formData: FormData) {
     },
   });
 
-  revalidatePath(`/negocios/${business.id}/cerebro`);
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
 }
 
 export async function removeServiceAction(businessId: string, serviceId: string) {
   const { business } = await requireBusiness(businessId);
   await prisma.service.delete({ where: { id: serviceId } });
-  revalidatePath(`/negocios/${business.id}/cerebro`);
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
 }
 
 export async function updateAutomationsAction(businessId: string, formData: FormData) {
@@ -118,21 +118,21 @@ export async function updateAutomationsAction(businessId: string, formData: Form
     },
   });
 
-  revalidatePath(`/negocios/${business.id}/automacoes`);
-  revalidatePath(`/negocios/${business.id}/cerebro`);
+  revalidatePath(`/negocios/${business.slug}/automacoes`);
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
 }
 
 export async function runAutomationsNowAction(businessId: string) {
   const { business } = await requireBusiness(businessId);
   await runAutomationsForBusiness(business);
-  revalidatePath(`/negocios/${business.id}/automacoes`);
+  revalidatePath(`/negocios/${business.slug}/automacoes`);
 }
 
 export async function updatePlanAction(businessId: string, plan: "ESSENCIAL" | "PROFISSIONAL" | "ILIMITADO") {
   const { business } = await requireBusiness(businessId);
   // Once Stripe is wired, this action becomes the success handler after checkout.
   await prisma.business.update({ where: { id: business.id }, data: { plan } });
-  revalidatePath(`/negocios/${business.id}/plano`);
+  revalidatePath(`/negocios/${business.slug}/plano`);
 }
 
 export async function updateWhatsappAction(businessId: string, formData: FormData) {
@@ -146,5 +146,5 @@ export async function updateWhatsappAction(businessId: string, formData: FormDat
     },
   });
 
-  revalidatePath(`/negocios/${business.id}/cerebro`);
+  revalidatePath(`/negocios/${business.slug}/cerebro`);
 }

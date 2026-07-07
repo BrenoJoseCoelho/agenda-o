@@ -25,9 +25,10 @@ export default async function AgendaPage({
   params: Promise<{ businessId: string }>;
   searchParams: Promise<{ d?: string }>;
 }) {
-  const { businessId } = await params;
+  const { businessId: routeParam } = await params;
   const { d } = await searchParams;
-  await requireBusiness(businessId); // valida acesso do usuario a este negocio
+  const { business } = await requireBusiness(routeParam); // valida acesso do usuario a este negocio
+  const businessId = business.id;
 
   const today = new Date();
   const selected = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T12:00:00`) : today;

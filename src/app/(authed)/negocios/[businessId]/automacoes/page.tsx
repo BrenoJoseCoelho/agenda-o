@@ -21,8 +21,9 @@ export default async function AutomacoesPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  const { business } = await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
   const candidates = await getAutomationCandidates(business);
 
   const save = updateAutomationsAction.bind(null, businessId);

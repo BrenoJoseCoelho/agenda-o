@@ -18,10 +18,10 @@ async function loadAppointment(businessId: string, appointmentId: string) {
 export async function cancelAppointmentAction(businessId: string, appointmentId: string) {
   const loaded = await loadAppointment(businessId, appointmentId);
   if (!loaded) return;
-  const { appt } = loaded;
+  const { business, appt } = loaded;
 
   if (appt.externalProvider && appt.externalEventId) {
-    await deleteExternalEvent(businessId, appt.externalProvider, appt.externalEventId);
+    await deleteExternalEvent(business.id, appt.externalProvider, appt.externalEventId);
   }
 
   await prisma.appointment.update({
@@ -29,7 +29,7 @@ export async function cancelAppointmentAction(businessId: string, appointmentId:
     data: { status: "CANCELADO", externalEventId: null, externalProvider: null },
   });
 
-  revalidatePath(`/negocios/${businessId}/agenda`);
+  revalidatePath(`/negocios/${business.slug}/agenda`);
 }
 
 export async function rescheduleAppointmentAction(businessId: string, formData: FormData) {
@@ -47,7 +47,7 @@ export async function rescheduleAppointmentAction(businessId: string, formData: 
 
   // Remove the old external event, then create a new one for the new time.
   if (appt.externalProvider && appt.externalEventId) {
-    await deleteExternalEvent(businessId, appt.externalProvider, appt.externalEventId);
+    await deleteExternalEvent(business.id, appt.externalProvider, appt.externalEventId);
   }
   const pushed = await pushEventToCalendar({
     business,
@@ -68,5 +68,5 @@ export async function rescheduleAppointmentAction(businessId: string, formData: 
     },
   });
 
-  revalidatePath(`/negocios/${businessId}/agenda`);
+  revalidatePath(`/negocios/${business.slug}/agenda`);
 }

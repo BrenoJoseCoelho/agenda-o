@@ -88,7 +88,7 @@ export default async function OrganizacaoPage({
         {businesses.map((b) => (
           <Link
             key={b.id}
-            href={`/negocios/${b.id}/painel`}
+            href={`/negocios/${b.slug}/painel`}
             className="flex items-center justify-between px-5 py-4 hover-surface transition-colors group"
           >
             <div className="flex items-center gap-3">

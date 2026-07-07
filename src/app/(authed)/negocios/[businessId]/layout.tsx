@@ -9,8 +9,8 @@ export default async function BusinessLayout({
   children: React.ReactNode;
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  const { business, session } = await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business, session } = await requireBusiness(routeParam);
 
   return (
     <div>
@@ -29,7 +29,7 @@ export default async function BusinessLayout({
               )}
             </div>
           </div>
-          <BusinessNav businessId={business.id} />
+          <BusinessNav businessId={business.slug} />
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>

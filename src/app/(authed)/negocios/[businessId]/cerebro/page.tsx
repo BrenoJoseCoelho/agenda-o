@@ -16,8 +16,9 @@ export default async function CerebroPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  const { business } = await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
   const services = await prisma.service.findMany({
     where: { businessId },
     orderBy: { createdAt: "asc" },

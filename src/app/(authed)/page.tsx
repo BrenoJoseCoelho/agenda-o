@@ -17,5 +17,5 @@ export default async function RootPage() {
 
   if (!business) redirect("/organizacao");
 
-  redirect(`/negocios/${business.id}/painel`);
+  redirect(`/negocios/${business.slug}/painel`);
 }

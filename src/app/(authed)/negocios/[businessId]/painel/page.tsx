@@ -12,8 +12,9 @@ export default async function PainelPage({
 }: {
   params: Promise<{ businessId: string }>;
 }) {
-  const { businessId } = await params;
-  await requireBusiness(businessId);
+  const { businessId: routeParam } = await params;
+  const { business } = await requireBusiness(routeParam);
+  const businessId = business.id;
 
   const [conversations, appointmentsCount, contactsCount] = await Promise.all([
     prisma.conversation.findMany({
