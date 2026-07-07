@@ -19,7 +19,7 @@ export async function POST(
   }
 
   const conversation = await prisma.conversation.findUnique({ where: { id: conversationId } });
-  if (!conversation || conversation.businessId !== businessId) {
+  if (!conversation || conversation.businessId !== business.id) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 

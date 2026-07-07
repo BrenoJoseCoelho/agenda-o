@@ -27,6 +27,9 @@ export async function registerAction(formData: FormData) {
   if (!name || !email || !password || !orgName) {
     redirect("/registrar?error=Preencha todos os campos");
   }
+  if (password.length < 8) {
+    redirect("/registrar?error=A senha precisa ter ao menos 8 caracteres");
+  }
   if (orgType === "DONO" && !businessName) {
     redirect("/registrar?error=Informe o nome do seu negocio");
   }

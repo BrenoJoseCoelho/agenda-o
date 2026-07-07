@@ -9,6 +9,7 @@ export async function POST(
   const { businessId } = await params;
   const access = await requireBusinessApi(businessId);
   if ("error" in access) return access.error;
+  const { business } = access;
 
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Cliente novo";
@@ -18,11 +19,11 @@ export async function POST(
       : `55119${Math.floor(10000000 + Math.random() * 89999999)}`;
 
   const contact = await prisma.contact.create({
-    data: { businessId, name, phone },
+    data: { businessId: business.id, name, phone },
   });
 
   const conversation = await prisma.conversation.create({
-    data: { businessId, contactId: contact.id },
+    data: { businessId: business.id, contactId: contact.id },
     include: { contact: true, messages: true },
   });
 
