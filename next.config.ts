@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Empacota o motor nativo do Prisma (libquery_engine-*.so.node) nas funcoes
-  // serverless da Vercel. Sem isso o Prisma nao inicia no runtime
-  // (rhel-openssl-3.0.x). Chave "/*" = todas as rotas (docs do Next).
+  // Empacota o Prisma Client gerado e seus motores nativos nas funcoes
+  // serverless da Vercel. Sem isso o runtime pode iniciar sem o
+  // libquery_engine-rhel-openssl-3.0.x.so.node.
   outputFileTracingIncludes: {
-    "/*": ["./src/generated/prisma/*.so.node"],
-    "/**/*": ["./src/generated/prisma/*.so.node"],
+    "/*": ["src/generated/prisma/**/*"],
   },
 };
 
