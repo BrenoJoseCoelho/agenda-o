@@ -5,6 +5,8 @@ import { isWhatsappConnected } from "@/lib/whatsapp";
 import { isInstagramConnected } from "@/lib/instagram";
 import { INSTAGRAM_ENABLED } from "@/lib/features";
 import { d360Configured } from "@/lib/whatsapp/onboarding";
+import { metaEmbeddedConfigured, metaEmbeddedPublicConfig } from "@/lib/whatsapp/meta-onboarding";
+import MetaSignup from "./MetaSignup";
 import {
   disconnectCalendarAction,
   generateIcsTokenAction,
@@ -57,6 +59,8 @@ export default async function IntegracoesPage({
 
   const whatsappOn = isWhatsappConnected(business);
   const whatsappQuickAvailable = d360Configured();
+  const metaEmbedded = metaEmbeddedConfigured();
+  const metaCfg = metaEmbeddedPublicConfig();
   const instagramOn = isInstagramConnected(business);
   const igWebhookUrl = `${baseUrl}/api/instagram/webhook`;
 
@@ -120,7 +124,14 @@ export default async function IntegracoesPage({
           </div>
         ) : (
           <div className="border-t bd pt-4 space-y-4">
-            {whatsappQuickAvailable ? (
+            {metaEmbedded ? (
+              <MetaSignup
+                businessId={businessId}
+                appId={metaCfg.appId}
+                configId={metaCfg.configId}
+                graphVersion={metaCfg.graphVersion}
+              />
+            ) : whatsappQuickAvailable ? (
               <div className="space-y-2">
                 <a
                   href={`/api/integrations/whatsapp/d360/connect?businessId=${businessId}`}
@@ -134,7 +145,8 @@ export default async function IntegracoesPage({
               </div>
             ) : (
               <p className="text-xs text-3">
-                A conexao em 1 clique precisa do <code className="text-emerald-500">D360_PARTNER_ID</code>{" "}
+                A conexao em poucos cliques precisa do{" "}
+                <code className="text-emerald-500">META_APP_ID</code> (Embedded Signup da Meta)
                 configurado no servidor. Enquanto isso, use o modo avancado abaixo.
               </p>
             )}
